@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Waldo</string>
+    <string name="app_name">LoginAndSignUp</string>
+    <string name="default_web_client_id">AIzaSyCdSCr5nTdkUtyzc_rLdx5SrVUgA3IFbnc
+    </string>
 </resources>

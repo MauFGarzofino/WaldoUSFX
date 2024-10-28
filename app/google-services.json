@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "230642390587",
+    "project_id": "waldo-usfx",
+    "storage_bucket": "waldo-usfx.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230642390587:android:9a31ba36d3aacb3780ae1e",
+        "android_client_info": {
+          "package_name": "com.example.waldo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230642390587-5loc97q7p1hte87mn9ash99ugfdr42kj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.waldo",
+            "certificate_hash": "dc57f835f28f06c94aa57e213fd8664902e7443d"
+          }
+        },
+        {
+          "client_id": "230642390587-ct6m77cm5h6c3d52jpccsnre3qj9gaca.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdSCr5nTdkUtyzc_rLdx5SrVUgA3IFbnc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230642390587-ct6m77cm5h6c3d52jpccsnre3qj9gaca.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,7 +8,6 @@
     android:background="@color/background_color"
     tools:context=".MainActivity">
 
-    <!-- Encabezado con el logo y la campana -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,7 +16,6 @@
         android:gravity="center_vertical"
         android:background="@color/header_color">
 
-        <!-- Logo -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -26,10 +24,8 @@
             android:textSize="24sp"
             android:textColor="@color/text_color" />
 
-        <!-- Campana de notificaciones -->
     </LinearLayout>
 
-    <!-- Botón de Vincular dispositivo -->
     <Button
         android:id="@+id/btn_vincular"
         android:layout_width="match_parent"
@@ -43,7 +39,6 @@
         android:textStyle="bold"
         android:drawablePadding="8dp" />
 
-    <!-- Sección de mapa de ubicación en tiempo real -->
     <TextView
         android:id="@+id/location_title"
         android:layout_width="match_parent"
@@ -63,7 +58,6 @@
         android:layout_margin="16dp"
         tools:layout_editor_absoluteX="16dp" />
 
-    <!-- Lista de ubicación de los niños -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -147,4 +141,14 @@
             android:textSize="14sp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btn_logout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/button_background"
+        android:textColor="@color/white"
+        android:text="Logout"
+        android:layout_margin="16dp"
+        android:padding="12dp"
+        android:textStyle="bold" />
 </LinearLayout>
