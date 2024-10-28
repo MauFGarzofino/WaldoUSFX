@@ -1,8 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/map"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"/>
+    android:orientation="vertical"
+    android:background="@color/background_color"
+    tools:context=".MainActivity">
+
+    <!-- Encabezado con el logo y la campana -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:background="@color/header_color">
+
+        <!-- Logo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Waldo"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:textColor="@color/text_color" />
+
+        <!-- Campana de notificaciones -->
+    </LinearLayout>
+
+    <!-- Botón de Vincular dispositivo -->
+    <Button
+        android:id="@+id/btn_vincular"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/button_background"
+        android:textColor="@color/white"
+        android:drawableStart="@drawable/ic_device"
+        android:text="Vincular dispositivo"
+        android:layout_margin="16dp"
+        android:padding="12dp"
+        android:textStyle="bold"
+        android:drawablePadding="8dp" />
+
+    <!-- Sección de mapa de ubicación en tiempo real -->
+    <TextView
+        android:id="@+id/location_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ubicación en tiempo real"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:textColor="@color/text_color" />
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="219dp"
+        android:layout_margin="16dp"
+        tools:layout_editor_absoluteX="16dp" />
+
+    <!-- Lista de ubicación de los niños -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/teddy_bear"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Profile Image" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="María"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_color" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Calle Junín #45"
+                    android:textSize="14sp"
+                    android:textColor="@color/subtext_color" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Más ubicaciones pueden añadirse aquí de la misma manera -->
+
+    </LinearLayout>
+
+    <!-- Botones adicionales: Crear rutas, Añadir zonas, Ver historial -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:padding="10dp"
+        >
+
+        <Button
+            android:id="@+id/btn_add_zones"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Añadir zonas"
+            android:drawableTop="@drawable/ic_zones"
+            android:textColor="@color/white"
+            android:layout_margin="6dp"
+            android:backgroundTint="@color/button_background"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_view_history"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Ver historial"
+            android:drawableTop="@drawable/ic_history"
+            android:textColor="@color/white"
+            android:layout_margin="6dp"
+            android:backgroundTint="@color/button_background"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</LinearLayout>
