@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_color"
+    android:background="#f5f2ee"
     tools:context=".MainActivity">
 
     <LinearLayout
@@ -14,15 +14,15 @@
         android:orientation="horizontal"
         android:padding="16dp"
         android:gravity="center_vertical"
-        android:background="@color/header_color">
+        android:background="#f5f2ee">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Waldo"
-            android:textStyle="bold"
+            android:textColor="@color/text_color"
             android:textSize="24sp"
-            android:textColor="@color/text_color" />
+            android:textStyle="bold" />
 
     </LinearLayout>
 
@@ -30,7 +30,7 @@
         android:id="@+id/btn_vincular"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/button_background"
+        android:backgroundTint="#00445E"
         android:textColor="@color/white"
         android:drawableStart="@drawable/ic_device"
         android:text="Vincular dispositivo"
@@ -123,9 +123,9 @@
             android:layout_weight="1"
             android:text="Añadir zonas"
             android:drawableTop="@drawable/ic_zones"
-            android:textColor="@color/white"
+            android:textColor="#fed94e"
             android:layout_margin="6dp"
-            android:backgroundTint="@color/button_background"
+            android:backgroundTint="#7f99a3"
             android:textSize="14sp" />
 
         <Button
@@ -135,9 +135,9 @@
             android:layout_weight="1"
             android:text="Ver historial"
             android:drawableTop="@drawable/ic_history"
-            android:textColor="@color/white"
+            android:textColor="#fed94e"
             android:layout_margin="6dp"
-            android:backgroundTint="@color/button_background"
+            android:backgroundTint="#7f99a3"
             android:textSize="14sp" />
     </LinearLayout>
 
@@ -145,7 +145,7 @@
         android:id="@+id/btn_logout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/button_background"
+        android:backgroundTint="#00445E"
         android:textColor="@color/white"
         android:text="Logout"
         android:layout_margin="16dp"
