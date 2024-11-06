@@ -3,26 +3,25 @@ package com.example.waldo
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var lastLocation: Location
     private lateinit var firebaseAuth: FirebaseAuth
 
     companion object {
@@ -33,37 +32,33 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicializar FirebaseAuth
+        // Inicializar FirebaseAuth y FusedLocationProviderClient
         firebaseAuth = FirebaseAuth.getInstance()
-
-        // Inicializar el cliente de ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Crear fragmento del mapa
+        // Configurar fragmento del mapa
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        // Lógica del botón de Logout
+        // Configurar el botón de logout
+        setupLogoutButton()
+    }
+
+    private fun setupLogoutButton() {
         val logoutButton = findViewById<Button>(R.id.btn_logout)
         logoutButton.setOnClickListener {
-            // Cerrar sesión en Firebase
             firebaseAuth.signOut()
-
-            // Redirigir al SignInActivity
-            val intent = Intent(this, SignInActivity::class.java)
-            startActivity(intent)
-            finish() // Finaliza la MainActivity para que no esté en el back stack
+            startActivity(Intent(this, SignInActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            })
+            finish()
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
-
-        // Habilitar controles del mapa
         map.uiSettings.isZoomControlsEnabled = true
-
-        // Verificar permisos y establecer la ubicación
         setUpMap()
     }
 
@@ -76,7 +71,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // Solicitar permisos de ubicación
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -85,22 +79,33 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
 
-        // Habilitar la ubicación en el mapa si los permisos están concedidos
         map.isMyLocationEnabled = true
 
-        // Obtener la última ubicación conocida
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                lastLocation = location
-                val currentLatLng = LatLng(location.latitude, location.longitude)
+        // Configurar LocationRequest
+        val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+            // especifica que la aplicación necesita la ubicación más precisa posible
+            Priority.PRIORITY_HIGH_ACCURACY,
+            1000L // Intervalo de 1 segundos
+        ).apply {
+            setMinUpdateIntervalMillis(1000L) // Intervalo mínimo de actualización
+        }.build()
 
-                // Colocar un marcador en la ubicación actual
-                map.addMarker(MarkerOptions().position(currentLatLng).title("Ubicación actual"))
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest, object : com.google.android.gms.location.LocationCallback() {
+                override fun onLocationResult(locationResult: com.google.android.gms.location.LocationResult) {
+                    val location = locationResult.lastLocation
+                    if (location != null) {
+                        updateMapLocation(LatLng(location.latitude, location.longitude))
+                    }
+                }
+            },
+            Looper.getMainLooper()
+        )
+    }
 
-                // Hacer zoom a la ubicación actual
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
-            }
-        }
+    private fun updateMapLocation(currentLatLng: LatLng) {
+        map.clear()
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
     }
 
     override fun onRequestPermissionsResult(
@@ -109,10 +114,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                setUpMap()
-            }
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE &&
+            grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            setUpMap()
         }
     }
 }

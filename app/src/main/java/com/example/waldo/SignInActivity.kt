@@ -27,7 +27,6 @@ class SignInActivity : AppCompatActivity() {
         private const val TAG = "GoogleSignIn"
     }
 
-    // Usaremos ActivityResultLauncher en lugar de startActivityForResult
     private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,8 +107,14 @@ class SignInActivity : AppCompatActivity() {
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             val account = task.getResult(ApiException::class.java)!!
-            Log.d(TAG, "firebaseAuthWithGoogle:" + account.id)
-            firebaseAuthWithGoogle(account.idToken!!)
+            Log.d(TAG, "firebaseAuthWithGoogle: ${account.id}")
+            val idToken = account.idToken
+            if (idToken != null) {
+                Log.d(TAG, "Received Google ID Token (JWT): $idToken")
+                firebaseAuthWithGoogle(idToken)
+            } else {
+                Log.w(TAG, "Google sign in failed: ID Token is null")
+            }
         } catch (e: ApiException) {
             Log.w(TAG, "Google sign in failed", e)
         }
@@ -120,6 +125,7 @@ class SignInActivity : AppCompatActivity() {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         firebaseAuth.signInWithCredential(credential).addOnCompleteListener(this) { task ->
             if (task.isSuccessful) {
+                Log.d(TAG, "signInWithCredential:success")
                 val intent = Intent(this, MainActivity::class.java)
                 startActivity(intent)
                 finish()
