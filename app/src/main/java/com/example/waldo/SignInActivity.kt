@@ -1,14 +1,16 @@
 package com.example.waldo
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.waldo.API.REST
+import com.example.waldo.Interfaces.ApiService
+import com.example.waldo.Models.User
+import com.example.waldo.Repository.UserRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -17,27 +19,29 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class SignInActivity : AppCompatActivity() {
 
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var userRepository: UserRepository
 
     companion object {
         private const val TAG = "GoogleSignIn"
+        private const val PREFS_NAME = "com.example.waldo"
+        private const val FIRST_RUN_KEY = "first_run"
     }
 
-    // Usaremos ActivityResultLauncher en lugar de startActivityForResult
     private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signin)
 
-        // Inicializando FirebaseAuth
         firebaseAuth = FirebaseAuth.getInstance()
-
-        // Configuración de Google Sign-In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
@@ -45,7 +49,10 @@ class SignInActivity : AppCompatActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        // Inicializando el ActivityResultLauncher para Google Sign-In
+        if (isFirstRun()) {
+            signOutFromGoogle()
+        }
+
         googleSignInLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
@@ -53,76 +60,86 @@ class SignInActivity : AppCompatActivity() {
             handleSignInResult(task)
         }
 
-        // Elementos de layout
-        val emailEt = findViewById<EditText>(R.id.emailEt)
-        val passEt = findViewById<EditText>(R.id.passET)
-        val signInButton = findViewById<Button>(R.id.button)
-        val signUpTextView = findViewById<TextView>(R.id.textView)
-        val errorTextView = findViewById<TextView>(R.id.errorTextView)
         val googleSignInButton = findViewById<com.google.android.gms.common.SignInButton>(R.id.googleSignInButton)
-
-        // Redirigir al SignUpActivity si no tiene cuenta
-        signUpTextView.setOnClickListener {
-            val intent = Intent(this, SignUpActivity::class.java)
-            startActivity(intent)
-        }
-
-        // Lógica del botón de Sign In con email y contraseña
-        signInButton.setOnClickListener {
-            val email = emailEt.text.toString()
-            val pass = passEt.text.toString()
-
-            errorTextView.text = ""
-            errorTextView.visibility = TextView.GONE
-
-            if (email.isNotEmpty() && pass.isNotEmpty()) {
-                firebaseAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener {
-                    if (it.isSuccessful) {
-                        val intent = Intent(this, MainActivity::class.java)
-                        startActivity(intent)
-                        finish()
-                    } else {
-                        errorTextView.text = "Error: ${it.exception?.message}"
-                        errorTextView.visibility = TextView.VISIBLE
-                    }
-                }
-            } else {
-                errorTextView.text = "All fields must be filled"
-                errorTextView.visibility = TextView.VISIBLE
-            }
-        }
-
-        // Lógica del botón de Google Sign-In
         googleSignInButton.setOnClickListener {
             signInWithGoogle()
         }
+
+        userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this)
     }
 
-    // Iniciar el proceso de Google Sign-In usando ActivityResultLauncher
+    private fun isFirstRun(): Boolean {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
+        if (isFirstRun) {
+            sharedPreferences.edit().putBoolean(FIRST_RUN_KEY, false).apply()
+        }
+        return isFirstRun
+    }
+
     private fun signInWithGoogle() {
-        val signInIntent = googleSignInClient.signInIntent
-        googleSignInLauncher.launch(signInIntent)
+        // Revoca el acceso antes de mostrar el flujo de inicio de sesión
+        googleSignInClient.revokeAccess().addOnCompleteListener {
+            val signInIntent = googleSignInClient.signInIntent
+            googleSignInLauncher.launch(signInIntent)
+        }
     }
 
-    // Manejar el resultado del Sign-In con Google
+    private fun signOutFromGoogle() {
+        firebaseAuth.signOut()
+        googleSignInClient.signOut().addOnCompleteListener {
+            googleSignInClient.revokeAccess().addOnCompleteListener {
+                Log.d("SignInActivity", "Logged out and access revoked for Google account")
+            }
+        }
+    }
+
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             val account = task.getResult(ApiException::class.java)!!
-            Log.d(TAG, "firebaseAuthWithGoogle:" + account.id)
-            firebaseAuthWithGoogle(account.idToken!!)
+            Log.d(TAG, "firebaseAuthWithGoogle: ${firebaseAuth.currentUser?.uid}")
+            firebaseAuthWithGoogle(account)
         } catch (e: ApiException) {
             Log.w(TAG, "Google sign in failed", e)
         }
     }
 
-    // Autenticarse en Firebase con el token de Google
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
+    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
+        Log.d(TAG, "JWT Token recibido: ${account.idToken}")
+        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         firebaseAuth.signInWithCredential(credential).addOnCompleteListener(this) { task ->
             if (task.isSuccessful) {
                 val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
-                finish()
+                    .putExtra("idUser", firebaseAuth.currentUser?.uid.toString())
+
+                Log.d(TAG, "UID usado ${firebaseAuth.currentUser?.uid.toString()}")
+
+                userRepository.createUser(
+                    User(
+                        firebaseAuth.currentUser?.uid.toString(),
+                        account.familyName.toString(),
+                        account.givenName.toString(),
+                        account.email.toString(),
+                        "parent"
+                    )
+                ).enqueue(object : Callback<User> {
+                    override fun onResponse(call: Call<User>, response: Response<User>) {
+                        if (response.isSuccessful) {
+                            val token = response.body()?.token
+                            if (token != null) {
+                                userRepository.saveToken(token)
+                            }
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            Log.e(TAG, "Error en la respuesta: datos no enviados")
+                        }
+                    }
+
+                    override fun onFailure(call: Call<User>, t: Throwable) {
+                        Log.e(TAG, "Error al crear el usuario", t)
+                    }
+                })
             } else {
                 Log.w(TAG, "signInWithCredential:failure", task.exception)
             }
@@ -131,8 +148,6 @@ class SignInActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-
-        // Si el usuario ya está autenticado, redirigir a MainActivity
         if (firebaseAuth.currentUser != null) {
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
