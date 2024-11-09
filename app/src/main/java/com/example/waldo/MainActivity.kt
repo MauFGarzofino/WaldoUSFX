@@ -1,48 +1,73 @@
 package com.example.waldo
 
-import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Looper
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import com.example.waldo.permission.PermissionManager
+import com.example.waldo.API.REST
+import com.example.waldo.Interfaces.ApiService
+import com.example.waldo.Models.LocationData
+import com.example.waldo.Repository.LocationDataRepository
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.MarkerOptions
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var map: GoogleMap
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var locationDataRepository: LocationDataRepository
+    private lateinit var permissionManager: PermissionManager
 
     companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        private const val TAG = "ParentMainActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicializar FirebaseAuth y FusedLocationProviderClient
         firebaseAuth = FirebaseAuth.getInstance()
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        permissionManager = PermissionManager(this)
+        locationDataRepository = LocationDataRepository(REST.getRestEngine().create(ApiService::class.java), this)
 
-        // Configurar fragmento del mapa
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        // Configurar el botón de logout
         setupLogoutButton()
+
+        // Verificar y solicitar el permiso de notificación
+        requestNotificationPermissionIfNeeded()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (!permissionManager.hasNotificationPermission()) {
+            permissionManager.requestNotificationPermission(this, 101)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Permiso de notificación concedido.")
+            } else {
+                Log.e(TAG, "Permiso de notificación denegado.")
+            }
+        }
     }
 
     private fun setupLogoutButton() {
@@ -59,65 +84,34 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.uiSettings.isZoomControlsEnabled = true
-        setUpMap()
+
+        // Llama a la función para obtener la ubicación del niño
+        fetchChildrenLocations()
     }
 
-    private fun setUpMap() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
-            return
+    private fun fetchChildrenLocations() {
+        val childId = "Ci7ddBueLRMkcFFdyowqWYmjamB2"  // ID del niño
+        locationDataRepository.getLocationById(childId) { locationData ->
+            locationData?.let {
+                Log.d("MainActivity", "Child location: $it")
+                updateMapWithChildLocation(it)
+            } ?: Log.e("MainActivity", "Failed to fetch child location.")
         }
-
-        map.isMyLocationEnabled = true
-
-        // Configurar LocationRequest
-        val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-            // especifica que la aplicación necesita la ubicación más precisa posible
-            Priority.PRIORITY_HIGH_ACCURACY,
-            1000L // Intervalo de 1 segundos
-        ).apply {
-            setMinUpdateIntervalMillis(1000L) // Intervalo mínimo de actualización
-        }.build()
-
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest, object : com.google.android.gms.location.LocationCallback() {
-                override fun onLocationResult(locationResult: com.google.android.gms.location.LocationResult) {
-                    val location = locationResult.lastLocation
-                    if (location != null) {
-                        updateMapLocation(LatLng(location.latitude, location.longitude))
-                    }
-                }
-            },
-            Looper.getMainLooper()
-        )
     }
 
-    private fun updateMapLocation(currentLatLng: LatLng) {
+    private fun updateMapWithChildLocation(locationData: LocationData) {
+        val childLatLng = LatLng(locationData.latitude, locationData.longitude)
         map.clear()
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
-    }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE &&
-            grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            setUpMap()
-        }
+        // Añadir un marcador en la ubicación del niño
+        map.addMarker(
+            MarkerOptions()
+                .position(childLatLng)
+                .title("Nivel de batería: ${locationData.batteryLevel}%")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
+        )
+
+        // Centrar el mapa en la ubicación del niño
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
     }
 }
