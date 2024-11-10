@@ -1,4 +1,5 @@
 [versions]
+adapterRxjava3 = "2.9.0"
 agp = "8.5.1"
 converterGson = "2.11.0"
 firebaseAuthVersion = "23.1.0"
@@ -23,9 +24,11 @@ navigationCommon = "2.8.3"
 retrofit = "2.11.0"
 rxjava = "3.1.9"
 rxandroid = "3.0.2"
+rxjavaVersion = "3.1.3"
 
 [libraries]
 adapter-rxjava3 = { module = "com.squareup.retrofit2:adapter-rxjava3", version.ref = "converterGson" }
+adapter-rxjava3-v290 = { module = "com.squareup.retrofit2:adapter-rxjava3", version.ref = "adapterRxjava3" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 firebase-auth-v2310 = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuthVersion" }
@@ -48,6 +51,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 retrofit2-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 rxandroid = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxandroid" }
 rxjava = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjava" }
+rxjava-v313 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjavaVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

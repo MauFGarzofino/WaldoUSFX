@@ -19,6 +19,11 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MarkerOptions
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -26,6 +31,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var locationDataRepository: LocationDataRepository
     private lateinit var permissionManager: PermissionManager
+
+    private val disposables = CompositeDisposable() // Para gestionar las suscripciones
 
     companion object {
         private const val TAG = "ParentMainActivity"
@@ -44,8 +51,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         setupLogoutButton()
-
-        // Verificar y solicitar el permiso de notificación
         requestNotificationPermissionIfNeeded()
     }
 
@@ -85,18 +90,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         map = googleMap
         map.uiSettings.isZoomControlsEnabled = true
 
-        // Llama a la función para obtener la ubicación del niño
+        // Observar la ubicación
         fetchChildrenLocations()
     }
 
     private fun fetchChildrenLocations() {
-        val childId = "Ci7ddBueLRMkcFFdyowqWYmjamB2"  // ID del niño
-        locationDataRepository.getLocationById(childId) { locationData ->
-            locationData?.let {
-                Log.d("MainActivity", "Child location: $it")
-                updateMapWithChildLocation(it)
-            } ?: Log.e("MainActivity", "Failed to fetch child location.")
-        }
+        val childId = "dc279QqiCmfAxxxq07hjo7fTRLI2"  // ID del niño
+
+        val pollingObservable = Observable.interval(0, 1, TimeUnit.SECONDS)  // Intervalo de 1 segundo
+            .flatMapSingle {
+                locationDataRepository.getLocationById(childId)  // intervalos
+            }
+
+        disposables.add(
+            pollingObservable
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { locationData ->
+                        updateMapWithChildLocation(locationData)
+                    },
+                    { error ->
+                        Log.e(TAG, "Error fetching location data", error)
+                    }
+                )
+        )
     }
 
     private fun updateMapWithChildLocation(locationData: LocationData) {
@@ -113,5 +131,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Centrar el mapa en la ubicación del niño
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        disposables.clear() // Limpia las suscripciones
     }
 }
