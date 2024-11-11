@@ -119,6 +119,8 @@ class SignInActivity : AppCompatActivity() {
                         firebaseAuth.currentUser?.uid.toString(),
                         account.familyName.toString(),
                         account.givenName.toString(),
+                        account.photoUrl.toString(),
+                        firebaseAuth.currentUser?.phoneNumber.toString(),
                         account.email.toString(),
                         "parent"
                     )

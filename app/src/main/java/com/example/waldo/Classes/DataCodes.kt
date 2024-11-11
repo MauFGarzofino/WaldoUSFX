@@ -1,16 +1,21 @@
 package com.example.waldo.Classes
 
+import com.example.waldo.Models.Code
 import com.example.waldo.Models.LocationData
 
-class DataLocations {
-    private var locations: ArrayList<LocationData> = ArrayList<LocationData>()
+class DataCodes {
+
+    private var codes: ArrayList<Code?> = ArrayList<Code?>()
     companion object{
-        val instance : DataLocations by lazy {DataLocations()}
+        val instance : DataCodes by lazy {DataCodes()}
     }
-    fun addDataLocation(locationData: LocationData){
-        locations.add(locationData)
+    fun addDataLocation(code: Code?){
+        codes.add(code)
     }
-    fun removeDataLocation(locationData : LocationData){
-        locations.remove(locationData)
+    fun removeDataLocation(code : Code?){
+        codes.remove(code)
+    }
+    fun getCodes() : ArrayList<Code?>{
+        return codes
     }
 }
