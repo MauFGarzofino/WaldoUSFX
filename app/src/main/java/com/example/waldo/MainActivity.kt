@@ -17,6 +17,7 @@ import com.example.waldo.Models.LocationData
 import com.example.waldo.Repository.CodeRepository
 import com.example.waldo.Repository.EnrollmentRepository
 import com.example.waldo.Repository.LocationDataRepository
+import com.example.waldo.Repository.UserRepository
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -40,8 +41,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var permissionManager: PermissionManager
     private lateinit var codeRepository: CodeRepository
     private lateinit var enrollmentRepository: EnrollmentRepository
-
     private val disposables = CompositeDisposable() // Para gestionar las suscripciones
+    private var hasFocusedOnChildren = false // Para controlar el zoom automático
+    private lateinit var userRepository: UserRepository
 
     companion object {
         private const val TAG = "ParentMainActivity"
@@ -56,22 +58,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         locationDataRepository = LocationDataRepository(REST.getRestEngine().create(ApiService::class.java), this)
         codeRepository = CodeRepository(REST.getRestEngine().create(ApiService::class.java), this)
         enrollmentRepository = EnrollmentRepository(REST.getRestEngine().create(ApiService::class.java), this)
+        userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this) // Inicialización de userRepository
 
-        val btn_vincular = findViewById<Button>(R.id.btn_vincular)
-
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+        val btnVincular = findViewById<Button>(R.id.btn_vincular)
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         setupLogoutButton()
         requestNotificationPermissionIfNeeded()
 
-        btn_vincular.setOnClickListener {
-            showInputDialog()
-        }
-        findViewById<Button>(R.id.btn_view_history).setOnClickListener {
-            showCodes()
-        }
+        btnVincular.setOnClickListener { showInputDialog() }
+        findViewById<Button>(R.id.btn_view_history).setOnClickListener { showCodes() }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -80,18 +77,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Permiso de notificación concedido.")
-            } else {
-                Log.e(TAG, "Permiso de notificación denegado.")
-            }
+        if (requestCode == 101 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permiso de notificación concedido.")
+        } else {
+            Log.e(TAG, "Permiso de notificación denegado.")
         }
     }
 
@@ -109,78 +100,80 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.uiSettings.isZoomControlsEnabled = true
-
-        // Observar la ubicación
-
+        fetchChildrenLocations() // Inicia la actualización de ubicaciones
     }
 
-    private fun fetchChildrenLocations(code : String) {
+    private fun fetchChildrenLocations() {
+        // Realiza la actualización periódica de todas las ubicaciones vinculadas
         val pollingObservable = Observable.interval(0, 10, TimeUnit.SECONDS)
             .flatMap {
                 Observable.fromIterable(DataCodes.instance.getCodes().filterNotNull())
                     .flatMapSingle { code ->
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User))
-                        locationDataRepository.getLocationById(code?.id_User.toString())
-                            .doOnError { error ->
-                                Log.e(TAG, "Error fetching location for ID: ${code?.id_User}", error)
-                            }
+                        locationDataRepository.getLocationById(code.id_User.toString())
+                            .doOnError { error -> Log.e(TAG, "Error fetching location for ID: ${code.id_User}", error) }
                     }
             }
+
         disposables.add(
             pollingObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                    { locationData ->
-                        updateMapWithChildLocation(locationData)
-                    },
-                    { error ->
-                        Log.e(TAG, "Error in location polling", error)
-                    }
+                    { locationData -> updateMapWithChildLocation(locationData) },
+                    { error -> Log.e(TAG, "Error in location polling", error) }
                 )
         )
     }
 
     private fun updateMapWithChildLocation(locationData: LocationData) {
-
-        Log.e("Location", "${locationData.longitude} ${locationData.longitude}")
         val childLatLng = LatLng(locationData.latitude, locationData.longitude)
-        map.clear()
-        map.addMarker(
-            MarkerOptions()
-                .position(childLatLng)
-                .title("Nivel de batería: ${locationData.batteryLevel}%")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
-        )
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
+
+        userRepository.getUserById(locationData.id_User) { user ->
+
+            val childName = "${user?.givenName ?: "Niño"} ${user?.familyName ?: ""}"
+            val markerTitle = "$childName - Batería: ${locationData.batteryLevel}%"
+
+            // Agregar el marcador
+            map.addMarker(
+                MarkerOptions()
+                    .position(childLatLng)
+                    .title(markerTitle)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
+            )
+
+            // Realizar zoom solo la primera vez
+            if (!hasFocusedOnChildren) {
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
+                hasFocusedOnChildren = true
+            }
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         disposables.clear() // Limpia las suscripciones
     }
-    fun showInputDialog(){
 
+    private fun showInputDialog() {
         val input = EditText(this)
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Ingresa un texto")
-            .setMessage("Escribe algo:")
+            .setTitle("Ingresa el código de vinculación")
+            .setMessage("Introduce el código del niño para vincular:")
             .setView(input)
-            .setPositiveButton("OK") { dialog, which ->
+            .setPositiveButton("OK") { dialog, _ ->
                 val enteredText = input.text.toString()
                 codeRepository.getLastCode(enteredText)
-                Log.e("Text Entered", "Latitud: $enteredText")
-                fetchChildrenLocations(enteredText)
+                Log.e("Text Entered", "Código ingresado: $enteredText")
             }
-            .setNegativeButton("Cancelar") { dialog, which ->
-                dialog.cancel()
-            }
+            .setNegativeButton("Cancelar") { dialog, _ -> dialog.cancel() }
             .create()
 
         dialog.show()
     }
-    fun showCodes(){
-        DataCodes.instance.getCodes().forEach{ code ->
+
+    private fun showCodes() {
+        DataCodes.instance.getCodes().forEach { code ->
             Log.d("Code of array codes", "Code: ${code?.code} Kid: ${code?.id_User}")
         }
     }

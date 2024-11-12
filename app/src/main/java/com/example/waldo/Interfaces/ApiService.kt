@@ -41,4 +41,9 @@ interface ApiService {
         @Header("Authorization") authHeader: String
     ): Call<Code>
 
+    @GET("users/{id}")
+    fun getUserById(
+        @Path("id") id: String,
+        @Header("Authorization") authHeader: String
+    ): Call<User>
 }
