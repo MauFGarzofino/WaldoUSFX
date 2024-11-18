@@ -7,10 +7,12 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.waldo.permission.PermissionManager
 import com.example.waldo.API.REST
 import com.example.waldo.Classes.DataCodes
+import com.example.waldo.Classes.IntegratorCamera
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Interfaces.ApiService
 import com.example.waldo.Models.LocationData
@@ -26,6 +28,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
@@ -44,6 +48,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private val disposables = CompositeDisposable() // Para gestionar las suscripciones
     private var hasFocusedOnChildren = false // Para controlar el zoom automático
     private lateinit var userRepository: UserRepository
+    private val integrator = IntegratorCamera.getIntegrator(this) // get integrator to camera
 
     companion object {
         private const val TAG = "ParentMainActivity"
@@ -60,15 +65,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         enrollmentRepository = EnrollmentRepository(REST.getRestEngine().create(ApiService::class.java), this)
         userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this) // Inicialización de userRepository
 
-        val btnVincular = findViewById<Button>(R.id.btn_vincular)
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        setupLogoutButton()
+        setupButtons()
         requestNotificationPermissionIfNeeded()
-
-        btnVincular.setOnClickListener { showInputDialog() }
-        findViewById<Button>(R.id.btn_view_history).setOnClickListener { showCodes() }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -86,7 +87,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun setupLogoutButton() {
+    private fun setupButtons() {
         val logoutButton = findViewById<Button>(R.id.btn_logout)
         logoutButton.setOnClickListener {
             firebaseAuth.signOut()
@@ -94,6 +95,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             })
             finish()
+        }
+        findViewById<Button>(R.id.btn_view_history).setOnClickListener { showCodes() }
+        findViewById<Button>(R.id.btn_vincular).setOnClickListener {
+            showOptionsDialog()
         }
     }
 
@@ -155,26 +160,44 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         disposables.clear() // Limpia las suscripciones
     }
 
-    private fun showInputDialog() {
+    private fun showOptionsDialog() {
         val input = EditText(this)
         val dialog = AlertDialog.Builder(this)
             .setTitle("Ingresa el código de vinculación")
             .setMessage("Introduce el código del niño para vincular:")
             .setView(input)
-            .setPositiveButton("OK") { dialog, _ ->
+            .setPositiveButton("Aceptar") { dialog, _ ->
                 val enteredText = input.text.toString()
                 codeRepository.getLastCode(enteredText)
                 Log.e("Text Entered", "Código ingresado: $enteredText")
             }
-            .setNegativeButton("Cancelar") { dialog, _ -> dialog.cancel() }
+            .setNeutralButton("Escanear codígo QR") { dialog, _ ->
+                integrator.initiateScan()
+            }
             .create()
 
         dialog.show()
     }
-
     private fun showCodes() {
         DataCodes.instance.getCodes().forEach { code ->
             Log.d("Code of array codes", "Code: ${code?.code} Kid: ${code?.id_User}")
+        }
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        val result: IntentResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+
+        if (result != null) {
+            if (result.contents == null) {
+                Toast.makeText(this, "Escaneo cancelado", Toast.LENGTH_LONG).show()
+            } else {
+                val qrContent = result.contents
+                Toast.makeText(this, "Su codígo es: $qrContent", Toast.LENGTH_LONG).show()
+                codeRepository.getLastCode(qrContent)
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
         }
     }
 }
