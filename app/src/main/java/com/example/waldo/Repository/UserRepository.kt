@@ -29,8 +29,29 @@ class UserRepository(private val apiService: ApiService, private val context: Co
         }
     }
 
-    // Método adicional para verificar la conexión o permisos específicos del usuario
-    fun verifyUserConnection() {
-        // Implementación opcional
+    fun getUserById(id: String, onResult: (User?) -> Unit) {
+        val token = getToken()
+        if (token == null) {
+            Log.e("UserRepository", "Token no encontrado en SharedPreferences.")
+            onResult(null)
+            return
+        }
+
+        apiService.getUserById(id, "Bearer $token").enqueue(object : Callback<User> {
+            override fun onResponse(call: Call<User>, response: Response<User>) {
+                if (response.isSuccessful) {
+                    val user = response.body()
+                    onResult(user)
+                } else {
+                    Log.e("UserRepository", "Error al obtener el usuario: ${response.code()}")
+                    onResult(null)
+                }
+            }
+
+            override fun onFailure(call: Call<User>, t: Throwable) {
+                Log.e("UserRepository", "Fallo al obtener el usuario", t)
+                onResult(null)
+            }
+        })
     }
 }
