@@ -31,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:backgroundTint="#00445E"
-        android:textColor="@color/white"
+        android:textColor="@color/black"
         android:drawableStart="@drawable/ic_device"
         android:text="Vincular dispositivo"
         android:layout_margin="16dp"
