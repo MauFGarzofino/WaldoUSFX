@@ -29,6 +29,7 @@ rxjavaVersion = "3.1.3"
 core = "3.5.3"
 zxingAndroidEmbedded = "4.3.0"
 recyclerview = "1.3.2"
+picasso = "2.71828"
 
 [libraries]
 adapter-rxjava3 = { module = "com.squareup.retrofit2:adapter-rxjava3", version.ref = "converterGson" }
@@ -60,6 +61,7 @@ rxjava-v313 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjavaVer
 core = { group = "com.google.zxing", name = "core", version.ref = "core" }
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+picasso = { group = "com.squareup.picasso", name = "picasso", version.ref = "picasso" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

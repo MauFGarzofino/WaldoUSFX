@@ -4,6 +4,7 @@ import com.example.waldo.DTO.ConnectionStatusDto
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Models.Code
 import com.example.waldo.Models.Enrollment
+import com.example.waldo.Models.EnrollmentKid
 import com.example.waldo.Models.LocationData
 import com.example.waldo.Models.User
 import io.reactivex.rxjava3.core.Observable
@@ -57,8 +58,13 @@ interface ApiService {
     ): Call<List<ConnectionStatusDto>>
 
     // Método para obtener todos los niños vinculados al padre
+    @GET("enrollments-Kids")
+    fun getEnrollmentsKids(
+        @Header("Authorization") authHeader: String
+    ): Observable<List<EnrollmentKid>>
+
     @GET("enrollments/linked/kids")
-    fun getEnrolledKids(
+    fun getOnceEnrolledKids(
         @Header("Authorization") authHeader: String
     ): Call<List<User>>
 }

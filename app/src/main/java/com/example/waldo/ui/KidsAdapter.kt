@@ -3,10 +3,12 @@ package com.example.waldo.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.R
+import com.squareup.picasso.Picasso
 
 class KidsAdapter(var kids: MutableList<KidDisplayModel>) :
     RecyclerView.Adapter<KidsAdapter.KidViewHolder>() {
@@ -14,6 +16,7 @@ class KidsAdapter(var kids: MutableList<KidDisplayModel>) :
     class KidViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val kidName: TextView = view.findViewById(R.id.kid_name)
         val kidStatus: TextView = view.findViewById(R.id.kid_status)
+        val kidImage: ImageView = view.findViewById(R.id.kid_image)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): KidViewHolder {
@@ -26,6 +29,12 @@ class KidsAdapter(var kids: MutableList<KidDisplayModel>) :
         val kid = kids[position]
         holder.kidName.text = kid.name
         holder.kidStatus.text = kid.connectionStatus
+
+        Picasso.get()
+            .load(kid.photo)
+            .placeholder(R.drawable.defaults)
+            .error(R.drawable.error)
+            .into(holder.kidImage)
     }
 
     override fun getItemCount(): Int = kids.size

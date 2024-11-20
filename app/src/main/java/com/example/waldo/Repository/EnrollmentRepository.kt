@@ -58,7 +58,7 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
             return
         }
 
-        apiService.getEnrolledKids("Bearer $token").enqueue(object : Callback<List<User>> {
+        apiService.getOnceEnrolledKids("Bearer $token").enqueue(object : Callback<List<User>> {
             override fun onResponse(call: Call<List<User>>, response: Response<List<User>>) {
                 if (response.isSuccessful) {
                     val kids = response.body()

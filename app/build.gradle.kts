@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.core)
     implementation(libs.zxing.android.embedded)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.picasso)
     annotationProcessor(libs.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

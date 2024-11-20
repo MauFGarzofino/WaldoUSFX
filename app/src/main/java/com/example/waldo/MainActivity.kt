@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.waldo.API.Observer
 import com.example.waldo.permission.PermissionManager
 import com.example.waldo.API.REST
 import com.example.waldo.Classes.DataCodes
@@ -56,6 +57,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var userRepository: UserRepository
     private val integrator = IntegratorCamera.getIntegrator(this) // get integrator to camera
     private lateinit var kidsAdapter: KidsAdapter
+    private lateinit var disposablesKids: CompositeDisposable
+    private lateinit var observer: Observer
 
     // Connection status
     private lateinit var connectionStatusRepository: ConnectionStatusRepository
@@ -88,10 +91,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         setupButtons()
+        initViewComponents()
         requestNotificationPermissionIfNeeded()
 
         // Obtener niños vinculados al iniciar
-        fetchLinkedKids()
+        //fetchLinkedKids()
+    }
+
+    private fun initViewComponents() {
+        disposablesKids = CompositeDisposable()
+        observer = Observer()
+
+        observer.observeData(REST.getRestEngine().create(ApiService::class.java), disposablesKids, this)
     }
 
     private fun setupRecyclerView() {
@@ -110,7 +121,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 val displayModels = kids.map { kid ->
                     KidDisplayModel(
                         name = "${kid.givenName} ${kid.familyName}",
-                        connectionStatus = "Cargando estado..." // Placeholder inicial
+                        connectionStatus = "Cargando estado...", // Placeholder inicial
+                        photo = "https://img.freepik.com/premium-vector/default-image-icon-vector-missing-picture-page-website-design-mobile-app-no-photo-available_87543-11093.jpg"
                     )
                 }
 
@@ -128,7 +140,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (status != null) {
                     val updatedKid = KidDisplayModel(
                         name = "${kid.givenName} ${kid.familyName}",
-                        connectionStatus = status.connectionStatus
+                        connectionStatus = status.connectionStatus,
+                        photo = kid.photo
                     )
                     kidsAdapter.updateKid(index, updatedKid)
                 }
@@ -160,7 +173,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             })
             finish()
         }
-        findViewById<Button>(R.id.btn_view_history).setOnClickListener { showCodes() }
         findViewById<Button>(R.id.btn_vincular).setOnClickListener {
             showOptionsDialog()
         }

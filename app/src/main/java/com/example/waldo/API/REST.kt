@@ -13,7 +13,7 @@ class REST {
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
             val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
             return Retrofit.Builder()
-                .baseUrl("http://192.168.208.244:5000/")
+                .baseUrl("http://192.168.100.36:5000/")
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
