@@ -46,6 +46,7 @@ class CodeRepository(private val apiService: ApiService, private val context: Co
                         val code = response.body()
                         DataCodes.instance.addDataLocation(code)
                         showMessageDialog("Conectado exitosamente ${response.code()}")
+
                     } else {
                         showMessageDialog("Codigo expirado o no disponible ${response.code()}")
                     }

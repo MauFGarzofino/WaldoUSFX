@@ -68,9 +68,8 @@ dependencies {
 
     // Para cargar imágenes (si es necesario mostrar imágenes de perfil o marcadores personalizados)
     implementation(libs.glide)
-    implementation(libs.core)
-    implementation(libs.zxing.android.embedded)
     annotationProcessor(libs.compiler)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
