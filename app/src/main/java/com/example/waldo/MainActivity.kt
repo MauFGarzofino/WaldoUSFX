@@ -9,17 +9,24 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.waldo.API.Observer
 import com.example.waldo.permission.PermissionManager
 import com.example.waldo.API.REST
 import com.example.waldo.Classes.DataCodes
 import com.example.waldo.Classes.IntegratorCamera
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Interfaces.ApiService
+import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.Models.LocationData
+import com.example.waldo.Models.User
 import com.example.waldo.Repository.CodeRepository
+import com.example.waldo.Repository.ConnectionStatusRepository
 import com.example.waldo.Repository.EnrollmentRepository
 import com.example.waldo.Repository.LocationDataRepository
 import com.example.waldo.Repository.UserRepository
+import com.example.waldo.ui.KidsAdapter
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -49,6 +56,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var hasFocusedOnChildren = false // Para controlar el zoom automático
     private lateinit var userRepository: UserRepository
     private val integrator = IntegratorCamera.getIntegrator(this) // get integrator to camera
+    private lateinit var kidsAdapter: KidsAdapter
+    private lateinit var disposablesKids: CompositeDisposable
+    private lateinit var observer: Observer
+
+    // Connection status
+    private lateinit var connectionStatusRepository: ConnectionStatusRepository
+    private val linkedKids = mutableListOf<User>() // Lista de niños vinculados
 
     companion object {
         private const val TAG = "ParentMainActivity"
@@ -63,13 +77,76 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         locationDataRepository = LocationDataRepository(REST.getRestEngine().create(ApiService::class.java), this)
         codeRepository = CodeRepository(REST.getRestEngine().create(ApiService::class.java), this)
         enrollmentRepository = EnrollmentRepository(REST.getRestEngine().create(ApiService::class.java), this)
-        userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this) // Inicialización de userRepository
+        userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this)
+
+        // Connection Status
+        connectionStatusRepository = ConnectionStatusRepository(REST.getRestEngine().create(ApiService::class.java), this)
+
+        linkedKids.clear()
+
+        // Configurar RecyclerView y su adaptador
+        setupRecyclerView()
 
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         setupButtons()
+        initViewComponents()
         requestNotificationPermissionIfNeeded()
+
+        // Obtener niños vinculados al iniciar
+        //fetchLinkedKids()
+    }
+
+    private fun initViewComponents() {
+        disposablesKids = CompositeDisposable()
+        observer = Observer()
+
+        observer.observeData(REST.getRestEngine().create(ApiService::class.java), disposablesKids, this)
+    }
+
+    private fun setupRecyclerView() {
+        val recyclerView = findViewById<RecyclerView>(R.id.kidsRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        kidsAdapter = KidsAdapter(mutableListOf()) // Lista inicial vacía
+        recyclerView.adapter = kidsAdapter
+    }
+
+    private fun fetchLinkedKids() {
+        enrollmentRepository.getEnrolledKids { kids ->
+            if (kids != null) {
+                linkedKids.clear() // Limpia la lista de niños vinculados
+                linkedKids.addAll(kids) // Agrega los niños recién obtenidos
+
+                val displayModels = kids.map { kid ->
+                    KidDisplayModel(
+                        name = "${kid.givenName} ${kid.familyName}",
+                        connectionStatus = "Cargando estado...", // Placeholder inicial
+                        photo = "https://img.freepik.com/premium-vector/default-image-icon-vector-missing-picture-page-website-design-mobile-app-no-photo-available_87543-11093.jpg"
+                    )
+                }
+
+                kidsAdapter.updateKidsList(displayModels) // Actualiza el adaptador con los nuevos datos
+                fetchConnectionStatuses() // Obtener los estados de conexión
+            } else {
+                Log.e("MainActivity", "Error al obtener los niños vinculados")
+            }
+        }
+    }
+
+    private fun fetchConnectionStatuses() {
+        linkedKids.forEachIndexed { index, kid ->
+            connectionStatusRepository.getLatestConnectionStatus(kid.id) { status ->
+                if (status != null) {
+                    val updatedKid = KidDisplayModel(
+                        name = "${kid.givenName} ${kid.familyName}",
+                        connectionStatus = status.connectionStatus,
+                        photo = kid.photo
+                    )
+                    kidsAdapter.updateKid(index, updatedKid)
+                }
+            }
+        }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -96,7 +173,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             })
             finish()
         }
-        findViewById<Button>(R.id.btn_view_history).setOnClickListener { showCodes() }
         findViewById<Button>(R.id.btn_vincular).setOnClickListener {
             showOptionsDialog()
         }
@@ -169,6 +245,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .setPositiveButton("Aceptar") { dialog, _ ->
                 val enteredText = input.text.toString()
                 codeRepository.getLastCode(enteredText)
+                fetchLinkedKids()
                 Log.e("Text Entered", "Código ingresado: $enteredText")
             }
             .setNeutralButton("Escanear codígo QR") { dialog, _ ->

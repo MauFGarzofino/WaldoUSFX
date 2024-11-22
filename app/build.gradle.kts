@@ -70,10 +70,13 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.core)
     implementation(libs.zxing.android.embedded)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.picasso)
     annotationProcessor(libs.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.firebase.auth.v2310)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.recyclerview.v131)
 }

@@ -14,15 +14,15 @@
         android:orientation="horizontal"
         android:padding="16dp"
         android:gravity="center_vertical"
-        android:background="@color/header_color">
+        android:background="#f5f2ee">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Waldo"
-            android:textStyle="bold"
+            android:textColor="@color/text_color"
             android:textSize="24sp"
-            android:textColor="@color/text_color" />
+            android:textStyle="bold" />
 
     </LinearLayout>
 
@@ -30,7 +30,7 @@
         android:id="@+id/btn_vincular"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/button_background"
+        android:backgroundTint="#00445E"
         android:textColor="@color/white"
         android:drawableStart="@drawable/ic_device"
         android:text="Vincular dispositivo"
@@ -60,92 +60,23 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="216dp"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <LinearLayout
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/kidsRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/teddy_bear"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="Profile Image" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="María"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_color" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Calle Junín #45"
-                    android:textSize="14sp"
-                    android:textColor="@color/subtext_color" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Más ubicaciones pueden añadirse aquí de la misma manera -->
-
+            android:layout_height="200dp"
+            tools:listitem="@layout/kid_item_layout" />
     </LinearLayout>
 
     <!-- Botones adicionales: Crear rutas, Añadir zonas, Ver historial -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginLeft="15dp"
-        android:layout_marginRight="15dp"
-        android:padding="10dp"
-        >
-
-        <Button
-            android:id="@+id/btn_add_zones"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Añadir zonas"
-            android:drawableTop="@drawable/ic_zones"
-            android:textColor="@color/white"
-            android:layout_margin="6dp"
-            android:backgroundTint="@color/button_background"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btn_view_history"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Ver historial"
-            android:drawableTop="@drawable/ic_history"
-            android:textColor="@color/white"
-            android:layout_margin="6dp"
-            android:backgroundTint="@color/button_background"
-            android:textSize="14sp" />
-    </LinearLayout>
-
     <Button
         android:id="@+id/btn_logout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/button_background"
+        android:backgroundTint="#00445E"
         android:textColor="@color/white"
         android:text="Logout"
         android:layout_margin="16dp"
