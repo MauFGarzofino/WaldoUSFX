@@ -99,7 +99,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         requestNotificationPermissionIfNeeded()
 
         // Llama a fetchLinkedKids para sincronizar los datos
-        fetchLinkedKids()
+        //fetchLinkedKids()
+        initViewComponents()
     }
 
     private fun initViewComponents() {
@@ -350,7 +351,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
                             if (success) {
                                 Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
-                                fetchLinkedKids() // Actualiza la lista de niños vinculados
+                                //fetchLinkedKids() // Actualiza la lista de niños vinculados
                             } else {
                                 Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
                             }

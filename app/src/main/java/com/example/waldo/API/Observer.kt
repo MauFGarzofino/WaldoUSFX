@@ -50,7 +50,9 @@ class Observer {
 
         val disposable = observable.subscribe({ dataList ->
             Log.d("Observer", "Datos recibidos: ${dataList.size}")
+
             val displayModels = dataList.map { kid ->
+                Log.e("Kid spawned", kid.toString() )
                 KidDisplayModel(
                     id_User = kid.id_Kid, // Pasa el id_User desde el modelo original
                     name = "${kid.familyName} ${kid.givenName}",
