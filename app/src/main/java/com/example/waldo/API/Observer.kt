@@ -10,6 +10,7 @@ import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.R
 import com.example.waldo.ui.KidsAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
@@ -21,6 +22,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject
 class Observer {
 
     val nestToken: NestToken = NestToken.instance
+    val firebaseAuth: FirebaseUser? = FirebaseAuth.getInstance().currentUser
     private val manualTrigger: PublishSubject<Unit> = PublishSubject.create() // Para actualizaciones manuales
 
     fun observeData(
@@ -42,7 +44,7 @@ class Observer {
             manualTrigger // Actualización manual
         )
             .flatMap {
-                apiService.getEnrollmentsKids("Bearer $token")
+                apiService.getEnrollmentsKids(FirebaseAuth.getInstance().currentUser?.uid.toString(),"Bearer $token")
             }
             .distinctUntilChanged()
             .subscribeOn(Schedulers.io())
