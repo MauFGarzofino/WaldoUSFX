@@ -33,25 +33,33 @@ class CodeRepository(private val apiService: ApiService, private val context: Co
         dialog.show()
     }
 
-    fun getLastCode(id: String?) {
+    fun getLastCode(id: String?, callback: (Code?) -> Unit) {
         val token = getToken()
         if (token == null) {
             Log.e("AuthError", "No se encontró el token JWT en SharedPreferences")
+            callback(null)
             return
         }
+
         CoroutineScope(Dispatchers.IO).launch {
-            apiService.getLastCode(id,"Bearer $token").enqueue(object : Callback<Code> {
+            apiService.getLastCode(id, "Bearer $token").enqueue(object : Callback<Code> {
                 override fun onResponse(call: Call<Code>, response: Response<Code>) {
                     if (response.isSuccessful) {
                         val code = response.body()
-                        DataCodes.instance.addDataLocation(code)
-                        showMessageDialog("Conectado exitosamente ${response.code()}")
+                        if (code != null) {
+                            DataCodes.instance.addDataLocation(code)
+                            showMessageDialog("Conectado exitosamente ${response.code()}")
+                        }
+                        callback(code) // Llama al callback con el código obtenido
                     } else {
                         showMessageDialog("Codigo expirado o no disponible ${response.code()}")
+                        callback(null) // Llama al callback con null si hay error
                     }
                 }
+
                 override fun onFailure(call: Call<Code>, t: Throwable) {
                     Log.e("Error", "Error en la solicitud de código de vinculación", t)
+                    callback(null) // Llama al callback con null si falla la solicitud
                 }
             })
         }
