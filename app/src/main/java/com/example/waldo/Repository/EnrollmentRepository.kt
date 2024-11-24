@@ -2,12 +2,14 @@ package com.example.waldo.Repository
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.example.waldo.Classes.DataCodes
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Interfaces.ApiService
 import com.example.waldo.Models.Code
 import com.example.waldo.Models.Enrollment
 import com.example.waldo.Models.User
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,6 +22,9 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
     private fun getToken(): String? {
         val sharedPreferences = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
         return sharedPreferences.getString("jwt_token", null)
+    }
+    fun getContext() : Context{
+        return context
     }
 
     fun createEnrollment(createEnrollmentDTO: CreateEnrollmentDTO, callback: (Boolean) -> Unit) {
@@ -78,6 +83,26 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
             override fun onFailure(call: Call<List<User>>, t: Throwable) {
                 Log.e("EnrollmentRepo", "Error de conexión", t)
                 onResult(null)
+            }
+        })
+    }
+    fun unLinkEnrollment(idEnrollment: Int){
+        val token = getToken()
+        if (token == null) {
+            Log.e("AuthError", "No se encontró el token JWT en SharedPreferences")
+            return
+        }
+        apiService.unlinkEnrollment(idEnrollment,"Bearer $token").enqueue(object : Callback<Unit> {
+            override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "Niño desvinculado correctamente", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e("UnlinkEnrollment", "Error al desvincular: ${response.code()}")
+                }
+            }
+            override fun onFailure(call: Call<Unit>, t: Throwable) {
+                Log.e("UnlinkEnrollment", "Error de red: ${t.message}")
+                Toast.makeText(context, "Error de red: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }

@@ -38,6 +38,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationView
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var kidsAdapter: KidsAdapter
     private lateinit var disposablesKids: CompositeDisposable
     private lateinit var observer: Observer
+    private lateinit var navigationView: BottomNavigationView
 
     private val markersMap = mutableMapOf<String, Marker>() // Map para asociar IDs de niños con sus marcadores
 
@@ -102,6 +105,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         loadCodesParent()
         //Inicializa todos los componentes
         initViewComponents()
+
+        navigationView.setOnNavigationItemSelectedListener  { menuItem ->
+            when(menuItem.itemId){
+                R.id.nav_historial -> {
+                    val intent = Intent(this, HistoryActivity::class.java)
+                    startActivity(intent)
+                }
+            }
+            true
+        }
     }
 
     private fun initViewComponents() {
@@ -115,13 +128,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             activity = this,
             kidsAdapter = kidsAdapter // Pasa el adaptador inicializado
         )
+        navigationView = findViewById(R.id.bottomNavBar)
     }
 
     private fun setupRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.kidsRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        kidsAdapter = KidsAdapter(mutableListOf()) { selectedKid ->
+        kidsAdapter = KidsAdapter(EnrollmentRepository(REST.getRestEngine().create(ApiService::class.java), this),mutableListOf()) { selectedKid ->
             val selectedCode = DataCodes.instance.getCodes().find { it?.id_User == selectedKid.id_User }
             selectedChildId = selectedCode?.id_User
 
@@ -196,22 +210,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         kidsAdapter.updateKidsList(emptyList())
         Log.d("UserData", "Datos del usuario y mapa limpiados")
-    }
-
-    private fun fetchConnectionStatuses() {
-        linkedKids.forEachIndexed { index, kid ->
-            connectionStatusRepository.getLatestConnectionStatus(kid.id) { status ->
-                if (status != null) {
-                    val updatedKid = KidDisplayModel(
-                        id_User = kid.id,
-                        name = "${kid.givenName} ${kid.familyName}",
-                        connectionStatus = status.connectionStatus,
-                        photo = kid.photo
-                    )
-                    kidsAdapter.updateKid(index, updatedKid)
-                }
-            }
-        }
     }
 
     private fun requestNotificationPermissionIfNeeded() {

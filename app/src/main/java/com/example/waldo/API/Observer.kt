@@ -52,6 +52,7 @@ class Observer {
             Log.d("Observer", "Datos recibidos: ${dataList.size}")
             val displayModels = dataList.map { kid ->
                 KidDisplayModel(
+                    id_Enrollment = kid.id,
                     id_User = kid.id_Kid, // Pasa el id_User desde el modelo original
                     name = "${kid.familyName} ${kid.givenName}",
                     connectionStatus = if (kid.connectionStatus == "true") "Tiene acceso a internet" else "Sin acceso a internet",

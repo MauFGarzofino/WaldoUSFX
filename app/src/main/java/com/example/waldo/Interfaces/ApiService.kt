@@ -5,11 +5,13 @@ import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Models.Code
 import com.example.waldo.Models.Enrollment
 import com.example.waldo.Models.EnrollmentKid
+import com.example.waldo.Models.HistoryKid
 import com.example.waldo.Models.LocationData
 import com.example.waldo.Models.User
 import io.reactivex.rxjava3.core.Observable
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -68,4 +70,18 @@ interface ApiService {
     fun getOnceEnrolledKids(
         @Header("Authorization") authHeader: String
     ): Call<List<User>>
+
+    //Obtenemos el historial de todas las coneccines realizadas
+    @GET("history-kids/{idUser}")
+    fun getHistoryKids(
+        @Path("idUser") idUser: String?,
+        @Header("Authorization") authHeader: String
+    ): Call<List<HistoryKid>>
+
+    //Desvincula un enrollment
+    @DELETE("enrollments/unlink/{idEnrollment}")
+    fun unlinkEnrollment(
+        @Path("idEnrollment") idEnrollment: Int,
+        @Header("Authorization") authHeader: String
+    ) : Call<Unit>
 }

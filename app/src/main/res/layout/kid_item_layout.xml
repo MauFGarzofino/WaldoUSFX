@@ -15,8 +15,9 @@
         android:contentDescription="image" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <TextView
@@ -36,4 +37,15 @@
             android:textSize="14sp"
             android:textColor="@color/subtext_color" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/unlink_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Desvincular"
+        android:textSize="14sp"
+        android:paddingHorizontal="16dp"
+        android:backgroundTint="#e76f7c"
+        android:textColor="@android:color/white"
+        android:layout_marginStart="8dp" />
 </LinearLayout>
