@@ -101,6 +101,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setupButtons()
         requestNotificationPermissionIfNeeded()
 
+        //empieza el traqueo para el niño
+        fetchChildrenLocations()
         //Cargamos los kids vinculados a ese padre
         loadCodesParent()
         //Inicializa todos los componentes
@@ -186,6 +188,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         isAvaible = true // O establece un valor booleano apropiado
                     )
                 }
+                DataCodes.instance.getCodes().addAll(codes)
                 DataCodes.instance.getCodes().addAll(codes)
             } else {
                 Log.d(TAG, "No hay niños vinculados para este usuario.")
@@ -280,8 +283,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateMapWithChildLocation(locationData: LocationData) {
-        val childLatLng = LatLng(locationData.latitude, locationData.longitude)
 
+        val childLatLng = LatLng(locationData.latitude, locationData.longitude)
+        Log.d(TAG, "Actualizando location Kid: ${locationData.id_User}")
         if (markersMap.containsKey(locationData.id_User)) {
             // Actualiza la posición del marcador existente
             markersMap[locationData.id_User]?.position = childLatLng
