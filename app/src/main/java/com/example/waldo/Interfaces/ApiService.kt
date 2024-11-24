@@ -78,6 +78,12 @@ interface ApiService {
         @Header("Authorization") authHeader: String
     ): Call<List<HistoryKid>>
 
+    @GET("data-locations/history/{idKid}")
+    fun getHistoryLocations(
+        @Path("idKid") idKid: String?,
+        @Header("Authorization") authHeader: String
+    ): Call<List<LocationData>>
+
     //Desvincula un enrollment
     @DELETE("enrollments/unlink/{idEnrollment}")
     fun unlinkEnrollment(

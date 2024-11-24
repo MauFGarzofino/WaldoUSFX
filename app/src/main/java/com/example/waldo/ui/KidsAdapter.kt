@@ -2,20 +2,21 @@ package com.example.waldo.ui
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.example.waldo.HistoryActivity
+import com.example.waldo.HistoryDataLocationActivity
+import com.example.waldo.MainActivity
 import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.R
 import com.example.waldo.Repository.EnrollmentRepository
-import com.example.waldo.Repository.HistoryRepository
 import com.squareup.picasso.Picasso
 
 class KidsAdapter(
@@ -29,7 +30,9 @@ class KidsAdapter(
         val kidStatus: TextView = view.findViewById(R.id.kid_status)
         val kidImage: ImageView = view.findViewById(R.id.kid_image)
         val kidUnlinkButton : Button = view.findViewById(R.id.unlink_button)
+        val kidHistoryLocation : Button = view.findViewById(R.id.ButtonHistoryKid)
     }
+    private lateinit var context: Context;
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): KidViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -67,9 +70,18 @@ class KidsAdapter(
                 .create()
             dialog.show()
         }
+        holder.kidHistoryLocation.setOnClickListener {
+            val intent = Intent(context, HistoryDataLocationActivity::class.java)
+                .putExtra("id_Kid", kid.id_User)
+            context?.startActivity(intent)
+        }
     }
 
     override fun getItemCount(): Int = kids.size
+
+    fun setContext(context: Context){
+        this.context = context
+    }
 
     fun updateKid(index: Int, updatedKid: KidDisplayModel) {
         kids[index] = updatedKid

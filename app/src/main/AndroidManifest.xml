@@ -25,6 +25,9 @@
         android:theme="@style/Theme.Waldo"
         tools:targetApi="31">
         <activity
+            android:name=".HistoryDataLocationActivity"
+            android:exported="false" />
+        <activity
             android:name=".HistoryActivity"
             android:exported="false" />
         <activity

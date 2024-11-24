@@ -37,6 +37,16 @@
             android:textSize="14sp"
             android:textColor="@color/subtext_color" />
     </LinearLayout>
+    <Button
+        android:id="@+id/ButtonHistoryKid"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/history"
+        android:backgroundTint="#17364D"
+        android:drawablePadding="8dp"
+        android:gravity="center"
+        android:textColor="#00445E"
+        android:textColorLink="#00445E" />
 
     <Button
         android:id="@+id/unlink_button"

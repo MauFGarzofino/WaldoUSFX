@@ -147,6 +147,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Log.e(TAG, "No se encontró el código para el niño seleccionado.")
             }
         }
+        kidsAdapter.setContext(this)
 
         recyclerView.adapter = kidsAdapter
     }
