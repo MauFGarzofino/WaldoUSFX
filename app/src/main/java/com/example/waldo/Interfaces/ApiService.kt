@@ -60,6 +60,7 @@ interface ApiService {
     // Método para obtener todos los niños vinculados al padre
     @GET("enrollments-Kids")
     fun getEnrollmentsKids(
+        @Path("userId") userId: String,
         @Header("Authorization") authHeader: String
     ): Observable<List<EnrollmentKid>>
 

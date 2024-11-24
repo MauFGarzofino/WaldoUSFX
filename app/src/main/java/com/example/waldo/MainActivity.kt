@@ -99,7 +99,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         requestNotificationPermissionIfNeeded()
 
         // Llama a fetchLinkedKids para sincronizar los datos
-        fetchLinkedKids()
+        //fetchLinkedKids()
+        loadCodesParent()
+        initViewComponents()
     }
 
     private fun initViewComponents() {
@@ -167,8 +169,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Limpia los datos previos en memoria
         DataCodes.instance.getCodes().clear()
         kidsAdapter.updateKidsList(emptyList())
-        linkedKids.clear()
 
+        loadCodesParent()
+    }
+    private fun loadCodesParent(){
+        linkedKids.clear()
         enrollmentRepository.getEnrolledKids { kids ->
             if (kids != null && kids.isNotEmpty()) {
                 linkedKids.addAll(kids)

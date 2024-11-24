@@ -42,7 +42,7 @@ class Observer {
             manualTrigger // Actualización manual
         )
             .flatMap {
-                apiService.getEnrollmentsKids("Bearer $token")
+                apiService.getEnrollmentsKids(FirebaseAuth.getInstance().currentUser?.uid.toString(),"Bearer $token")
             }
             .distinctUntilChanged()
             .subscribeOn(Schedulers.io())
