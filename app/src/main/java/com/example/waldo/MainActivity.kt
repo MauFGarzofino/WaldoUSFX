@@ -101,8 +101,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setupButtons()
         requestNotificationPermissionIfNeeded()
 
-        //empieza el traqueo para el niño
-        fetchChildrenLocations()
+
         //Cargamos los kids vinculados a ese padre
         loadCodesParent()
         //Inicializa todos los componentes
@@ -188,8 +187,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         isAvaible = true // O establece un valor booleano apropiado
                     )
                 }
+                DataCodes.instance.getCodes().clear()
                 DataCodes.instance.getCodes().addAll(codes)
-                DataCodes.instance.getCodes().addAll(codes)
+                fetchChildrenLocations()
             } else {
                 Log.d(TAG, "No hay niños vinculados para este usuario.")
             }
@@ -251,19 +251,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        //empieza el traqueo para el niño
+        fetchChildrenLocations()
         map = googleMap
         map.uiSettings.isZoomControlsEnabled = true
-        fetchChildrenLocations() // Inicia la actualización de ubicaciones
     }
 
     private fun fetchChildrenLocations() {
+        Log.d(TAG, "Starting fetching to kids")
         locationPollingDisposable?.dispose()
 
         val pollingObservable = Observable.interval(0, 3, TimeUnit.SECONDS)
             .flatMap {
                 Observable.fromIterable(DataCodes.instance.getCodes().filterNotNull())
                     .filter { code ->
-                        // Verifica si el código pertenece a un niño vinculado
+                        Log.d(TAG, "fetchChildrenLocations: ${DataCodes.instance.getCodes().size}")
                         linkedKids.any { it.id == code.id_User }
                     }
                     .flatMapSingle { code ->
@@ -276,7 +278,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
-                { locationData -> updateMapWithChildLocation(locationData) },
+                { locationData -> updateMapWithChildLocation(locationData)},
                 { error -> Log.e(TAG, "Error in location polling", error) }
             )
         disposables.add(locationPollingDisposable!!)
@@ -323,12 +325,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .setView(input)
             .setPositiveButton("Aceptar") { dialog, _ ->
                 val enteredText = input.text.toString()
+                fetchChildrenLocations()
                 codeRepository.getLastCode(enteredText) { code ->
                     if (code != null) {
                         // Lógica para crear la vinculación con el callback
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
                             if (success) {
                                 Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
+                                loadCodesParent()
                             } else {
                                 Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
                             }
@@ -366,6 +370,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
                             if (success) {
                                 Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
+                                loadCodesParent()
                             } else {
                                 Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
                             }
