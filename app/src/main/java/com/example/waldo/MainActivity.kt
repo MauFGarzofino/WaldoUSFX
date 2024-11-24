@@ -1,6 +1,7 @@
 package com.example.waldo
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -18,6 +19,7 @@ import com.example.waldo.Classes.DataCodes
 import com.example.waldo.Classes.IntegratorCamera
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Interfaces.ApiService
+import com.example.waldo.Models.Code
 import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.Models.LocationData
 import com.example.waldo.Models.User
@@ -34,13 +36,14 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
@@ -60,9 +63,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var disposablesKids: CompositeDisposable
     private lateinit var observer: Observer
 
+    private val markersMap = mutableMapOf<String, Marker>() // Map para asociar IDs de niños con sus marcadores
+
     // Connection status
     private lateinit var connectionStatusRepository: ConnectionStatusRepository
     private val linkedKids = mutableListOf<User>() // Lista de niños vinculados
+
+    //
+    private var locationPollingDisposable: Disposable? = null // Nueva variable para manejar la suscripción
+    private var selectedChildId: String? = null // Variable para almacenar el ID del niño seleccionado
 
     companion object {
         private const val TAG = "ParentMainActivity"
@@ -72,66 +81,145 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setupRecyclerView()
+        clearUserData()
+
         firebaseAuth = FirebaseAuth.getInstance()
         permissionManager = PermissionManager(this)
         locationDataRepository = LocationDataRepository(REST.getRestEngine().create(ApiService::class.java), this)
         codeRepository = CodeRepository(REST.getRestEngine().create(ApiService::class.java), this)
         enrollmentRepository = EnrollmentRepository(REST.getRestEngine().create(ApiService::class.java), this)
         userRepository = UserRepository(REST.getRestEngine().create(ApiService::class.java), this)
-
-        // Connection Status
         connectionStatusRepository = ConnectionStatusRepository(REST.getRestEngine().create(ApiService::class.java), this)
-
-        linkedKids.clear()
-
-        // Configurar RecyclerView y su adaptador
-        setupRecyclerView()
 
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         setupButtons()
-        initViewComponents()
         requestNotificationPermissionIfNeeded()
 
-        // Obtener niños vinculados al iniciar
+        // Llama a fetchLinkedKids para sincronizar los datos
         //fetchLinkedKids()
+        initViewComponents()
     }
 
     private fun initViewComponents() {
         disposablesKids = CompositeDisposable()
         observer = Observer()
 
-        observer.observeData(REST.getRestEngine().create(ApiService::class.java), disposablesKids, this)
+        // Llama al observer con el adaptador existente
+        observer.observeData(
+            apiService = REST.getRestEngine().create(ApiService::class.java),
+            disposables = disposablesKids,
+            activity = this,
+            kidsAdapter = kidsAdapter // Pasa el adaptador inicializado
+        )
     }
 
     private fun setupRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.kidsRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        kidsAdapter = KidsAdapter(mutableListOf()) // Lista inicial vacía
+
+        kidsAdapter = KidsAdapter(mutableListOf()) { selectedKid ->
+            val selectedCode = DataCodes.instance.getCodes().find { it?.id_User == selectedKid.id_User }
+            selectedChildId = selectedCode?.id_User
+
+            if (selectedChildId != null) {
+                Log.d(TAG, "Siguiendo al niño: ${selectedKid.name}")
+                fetchSingleChildLocation()
+            } else {
+                Log.e(TAG, "No se encontró el código para el niño seleccionado.")
+            }
+        }
+
         recyclerView.adapter = kidsAdapter
     }
 
+    private var singleChildLocationDisposable: Disposable? = null // Variable para manejar la suscripción
+
+    private fun fetchSingleChildLocation() {
+        // Detén cualquier flujo previo antes de iniciar uno nuevo
+        singleChildLocationDisposable?.dispose()
+
+        if (selectedChildId == null) {
+            Log.e(TAG, "No hay niño seleccionado para seguir.")
+            return
+        }
+
+        singleChildLocationDisposable = locationDataRepository.getLocationById(selectedChildId!!)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { locationData ->
+                    updateMapWithChildLocation(locationData)
+                    Log.d(TAG, "Actualizando ubicación para el niño con ID: $selectedChildId")
+                },
+                { error -> Log.e(TAG, "Error al obtener la ubicación del niño seleccionado", error) }
+            )
+    }
+
     private fun fetchLinkedKids() {
+        val currentUserId = firebaseAuth.currentUser?.uid
+        if (currentUserId == null) {
+            Log.e(TAG, "Usuario no autenticado.")
+            return
+        }
+
+        // Limpia los datos previos en memoria
+        DataCodes.instance.getCodes().clear()
+        kidsAdapter.updateKidsList(emptyList())
+        linkedKids.clear()
+
         enrollmentRepository.getEnrolledKids { kids ->
-            if (kids != null) {
-                linkedKids.clear() // Limpia la lista de niños vinculados
-                linkedKids.addAll(kids) // Agrega los niños recién obtenidos
+            if (kids != null && kids.isNotEmpty()) {
+                linkedKids.addAll(kids)
+
+                val codes = kids.map { kid ->
+                    Code(
+                        id = 0, // Si no tienes un valor específico, usa un placeholder como `0`
+                        id_User = kid.id,
+                        code = "", // Placeholder si no tienes el código
+                        isAvaible = true // O establece un valor booleano apropiado
+                    )
+                }
+                DataCodes.instance.getCodes().addAll(codes)
+
+                DataCodes.instance.getCodes().addAll(codes)
 
                 val displayModels = kids.map { kid ->
                     KidDisplayModel(
+                        id_User = kid.id,
                         name = "${kid.givenName} ${kid.familyName}",
-                        connectionStatus = "Cargando estado...", // Placeholder inicial
-                        photo = "https://img.freepik.com/premium-vector/default-image-icon-vector-missing-picture-page-website-design-mobile-app-no-photo-available_87543-11093.jpg"
+                        connectionStatus = "Cargando estado...",
+                        photo = kid.photo
                     )
                 }
 
-                kidsAdapter.updateKidsList(displayModels) // Actualiza el adaptador con los nuevos datos
-                fetchConnectionStatuses() // Obtener los estados de conexión
+                kidsAdapter.updateKidsList(displayModels)
+                fetchConnectionStatuses()
             } else {
-                Log.e("MainActivity", "Error al obtener los niños vinculados")
+                Log.d(TAG, "No hay niños vinculados para este usuario.")
             }
         }
+    }
+
+    private fun clearUserData() {
+        // Limpia los códigos en memoria
+        DataCodes.instance.getCodes().clear()
+
+        // Detiene el flujo de localización
+        locationPollingDisposable?.dispose()
+        locationPollingDisposable = null
+
+        // Limpia los marcadores del mapa
+        markersMap.values.forEach { it.remove() }
+        markersMap.clear()
+
+        linkedKids.clear()
+        hasFocusedOnChildren = false
+
+        kidsAdapter.updateKidsList(emptyList())
+        Log.d("UserData", "Datos del usuario y mapa limpiados")
     }
 
     private fun fetchConnectionStatuses() {
@@ -139,6 +227,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             connectionStatusRepository.getLatestConnectionStatus(kid.id) { status ->
                 if (status != null) {
                     val updatedKid = KidDisplayModel(
+                        id_User = kid.id,
                         name = "${kid.givenName} ${kid.familyName}",
                         connectionStatus = status.connectionStatus,
                         photo = kid.photo
@@ -167,12 +256,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun setupButtons() {
         val logoutButton = findViewById<Button>(R.id.btn_logout)
         logoutButton.setOnClickListener {
+            clearUserData() // Limpia los datos antes de cerrar sesión
+
+            val sharedPreferences = getSharedPreferences("auth", Context.MODE_PRIVATE)
+            sharedPreferences.edit().clear().apply() // Limpia todos los datos guardados
+
             firebaseAuth.signOut()
             startActivity(Intent(this, SignInActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             })
             finish()
         }
+
         findViewById<Button>(R.id.btn_vincular).setOnClickListener {
             showOptionsDialog()
         }
@@ -185,55 +280,61 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun fetchChildrenLocations() {
-        // Realiza la actualización periódica de todas las ubicaciones vinculadas
-        val pollingObservable = Observable.interval(0, 10, TimeUnit.SECONDS)
+        locationPollingDisposable?.dispose()
+
+        val pollingObservable = Observable.interval(0, 3, TimeUnit.SECONDS)
             .flatMap {
                 Observable.fromIterable(DataCodes.instance.getCodes().filterNotNull())
+                    .filter { code ->
+                        // Verifica si el código pertenece a un niño vinculado
+                        linkedKids.any { it.id == code.id_User }
+                    }
                     .flatMapSingle { code ->
-                        enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User))
                         locationDataRepository.getLocationById(code.id_User.toString())
                             .doOnError { error -> Log.e(TAG, "Error fetching location for ID: ${code.id_User}", error) }
                     }
             }
 
-        disposables.add(
-            pollingObservable
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { locationData -> updateMapWithChildLocation(locationData) },
-                    { error -> Log.e(TAG, "Error in location polling", error) }
-                )
-        )
+        locationPollingDisposable = pollingObservable
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { locationData -> updateMapWithChildLocation(locationData) },
+                { error -> Log.e(TAG, "Error in location polling", error) }
+            )
+        disposables.add(locationPollingDisposable!!)
     }
 
     private fun updateMapWithChildLocation(locationData: LocationData) {
         val childLatLng = LatLng(locationData.latitude, locationData.longitude)
 
-        userRepository.getUserById(locationData.id_User) { user ->
-
-            val childName = "${user?.givenName ?: "Niño"} ${user?.familyName ?: ""}"
-            val markerTitle = "$childName - Batería: ${locationData.batteryLevel}%"
-
-            // Agregar el marcador
-            map.addMarker(
+        if (markersMap.containsKey(locationData.id_User)) {
+            // Actualiza la posición del marcador existente
+            markersMap[locationData.id_User]?.position = childLatLng
+        } else {
+            // Agrega un nuevo marcador si no existe
+            val marker = map.addMarker(
                 MarkerOptions()
                     .position(childLatLng)
-                    .title(markerTitle)
+                    .title("Batería: ${locationData.batteryLevel}%")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
             )
-
-            // Realizar zoom solo la primera vez
-            if (!hasFocusedOnChildren) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
-                hasFocusedOnChildren = true
+            if (marker != null) {
+                markersMap[locationData.id_User] = marker
             }
+        }
+
+        // Centra la cámara en el niño seleccionado
+        if (locationData.id_User == selectedChildId) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(childLatLng, 16f))
+            Log.d(TAG, "Cámara centrada en el niño con ID: ${locationData.id_User}")
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        disposables.clear() // Limpia las suscripciones
+        disposables.clear()
+        singleChildLocationDisposable?.dispose()
     }
 
     private fun showOptionsDialog() {
@@ -244,22 +345,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .setView(input)
             .setPositiveButton("Aceptar") { dialog, _ ->
                 val enteredText = input.text.toString()
-                codeRepository.getLastCode(enteredText)
-                fetchLinkedKids()
-                Log.e("Text Entered", "Código ingresado: $enteredText")
+                codeRepository.getLastCode(enteredText) { code ->
+                    if (code != null) {
+                        // Lógica para crear la vinculación con el callback
+                        enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
+                            if (success) {
+                                Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
+                                //fetchLinkedKids() // Actualiza la lista de niños vinculados
+                            } else {
+                                Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "Código inválido")
+                        Toast.makeText(this, "Código inválido", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
-            .setNeutralButton("Escanear codígo QR") { dialog, _ ->
+            .setNeutralButton("Escanear código QR") { dialog, _ ->
                 integrator.initiateScan()
             }
             .create()
 
         dialog.show()
     }
-    private fun showCodes() {
-        DataCodes.instance.getCodes().forEach { code ->
-            Log.d("Code of array codes", "Code: ${code?.code} Kid: ${code?.id_User}")
-        }
-    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -270,8 +380,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Toast.makeText(this, "Escaneo cancelado", Toast.LENGTH_LONG).show()
             } else {
                 val qrContent = result.contents
-                Toast.makeText(this, "Su codígo es: $qrContent", Toast.LENGTH_LONG).show()
-                codeRepository.getLastCode(qrContent)
+                Toast.makeText(this, "Su código es: $qrContent", Toast.LENGTH_LONG).show()
+
+                // Llama al método getLastCode con un callback
+                codeRepository.getLastCode(qrContent) { code ->
+                    if (code != null) {
+                        // Si el código es válido, realiza la vinculación
+                        enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
+                            if (success) {
+                                Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
+                                fetchLinkedKids() // Actualiza la lista de niños vinculados
+                            } else {
+                                Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this, "Código QR inválido o expirado", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data)

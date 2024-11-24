@@ -22,12 +22,14 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
         return sharedPreferences.getString("jwt_token", null)
     }
 
-    fun createEnrollment(createEnrollmentDTO: CreateEnrollmentDTO) {
+    fun createEnrollment(createEnrollmentDTO: CreateEnrollmentDTO, callback: (Boolean) -> Unit) {
         val token = getToken()
         if (token == null) {
             Log.e("AuthError", "No se encontró el token JWT en SharedPreferences")
+            callback(false) // Llama al callback con `false` indicando error
             return
         }
+
         CoroutineScope(Dispatchers.IO).launch {
             apiService.createEnrollment(createEnrollmentDTO, "Bearer $token")
                 .enqueue(object : Callback<Enrollment> {
@@ -37,13 +39,16 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
                     ) {
                         if (response.isSuccessful) {
                             Log.d("Enrollment", "Enrollment created successfully")
+                            callback(true) // Llama al callback con `true` indicando éxito
                         } else {
                             Log.e("Enrollment", "Failed to create enrollment on response")
+                            callback(false) // Llama al callback con `false` indicando error
                         }
                     }
 
                     override fun onFailure(call: Call<Enrollment>, t: Throwable) {
                         Log.e("Enrollment", "Failed to create enrollment on request")
+                        callback(false) // Llama al callback con `false` indicando error
                     }
                 })
         }
@@ -62,7 +67,7 @@ class EnrollmentRepository(private val apiService: ApiService, private val conte
             override fun onResponse(call: Call<List<User>>, response: Response<List<User>>) {
                 if (response.isSuccessful) {
                     val kids = response.body()
-                    Log.d("EnrollmentRepo", "Datos obtenidos del backend: $kids")
+                    Log.d("EnrollmentRepo", "Niños obtenidos del servidor: ${kids?.size}")
                     onResult(kids)
                 } else {
                     Log.e("EnrollmentRepo", "Error al obtener niños vinculados: ${response.code()}")

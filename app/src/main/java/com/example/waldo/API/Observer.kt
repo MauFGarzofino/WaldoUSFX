@@ -10,38 +10,69 @@ import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.R
 import com.example.waldo.ui.KidsAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
-class Observer {
-    val nestToken : NestToken = NestToken.instance
-    private var firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private lateinit var kidsAdapter: KidsAdapter
+import io.reactivex.rxjava3.subjects.PublishSubject
 
-    fun observeData(apiService: ApiService,disposables: CompositeDisposable ,activity: Activity) {
-        val recyclerView = activity.findViewById<RecyclerView>(R.id.kidsRecyclerView)
+class Observer {
+
+    val nestToken: NestToken = NestToken.instance
+    val firebaseAuth: FirebaseUser? = FirebaseAuth.getInstance().currentUser
+    private val manualTrigger: PublishSubject<Unit> = PublishSubject.create() // Para actualizaciones manuales
+
+    fun observeData(
+        apiService: ApiService,
+        disposables: CompositeDisposable,
+        activity: Activity,
+        kidsAdapter: KidsAdapter
+    ) {
         val token = nestToken.getToken(activity)
 
         if (token == null) {
             Log.e("AuthError", "No se encontró el token JWT en SharedPreferences")
+            return
         }
-        val observable = Observable.interval(0,10, TimeUnit.SECONDS)
-            .flatMap { apiService.getEnrollmentsKids("Bearer $token")}
+
+        // Combina actualizaciones periódicas con manuales
+        val observable = Observable.merge(
+            Observable.interval(0, 3, TimeUnit.SECONDS).map { Unit }, // Actualización periódica
+            manualTrigger // Actualización manual
+        )
+            .flatMap {
+                apiService.getEnrollmentsKids(FirebaseAuth.getInstance().currentUser?.uid.toString(),"Bearer $token")
+            }
             .distinctUntilChanged()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
 
-        val disposable = observable.subscribe ({
-                dataList -> kidsAdapter = KidsAdapter( dataList.map { kid ->  KidDisplayModel("${kid.familyName} ${kid.givenName}",
-            if (kid.connectionStatus == "true")  "Tiene acceso a internet" else "Sin acceso a internet" , kid.photo) }.toMutableList() )
-                recyclerView.adapter = kidsAdapter
-        }, {
-                error ->
-            Toast.makeText(activity, "Error en cargar los Hijos", Toast.LENGTH_SHORT).show()
+        val disposable = observable.subscribe({ dataList ->
+            Log.d("Observer", "Datos recibidos: ${dataList.size}")
+
+            val displayModels = dataList.map { kid ->
+                Log.e("Kid spawned", kid.toString() )
+                KidDisplayModel(
+                    id_User = kid.id_Kid, // Pasa el id_User desde el modelo original
+                    name = "${kid.familyName} ${kid.givenName}",
+                    connectionStatus = if (kid.connectionStatus == "true") "Tiene acceso a internet" else "Sin acceso a internet",
+                    photo = kid.photo
+                )
+            }
+            kidsAdapter.updateKidsList(displayModels)
+        }, { error ->
+            Log.e("Observer", "Error en cargar los Hijos", error)
         })
+
         disposables.add(disposable)
     }
+
+    // Método para disparar actualizaciones manuales
+    fun triggerUpdate() {
+        manualTrigger.onNext(Unit)
+    }
 }
+
