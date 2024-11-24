@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:backgroundTint="#fefefe"
+    android:background="#fefefe"
+    android:gravity="center_vertical">
+
+    <!-- Imagen del niño -->
+    <ImageView
+        android:id="@+id/kid_history_image"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/teddy_bear"
+        android:layout_marginEnd="12dp"
+        android:contentDescription="kid_image_desc"
+        android:scaleType="centerCrop"
+        android:background="@drawable/image_background"
+        android:clipToOutline="true" />
+
+    <!-- Contenedor de la información del niño -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Fila: Nombre y Fecha -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:id="@+id/kid_name_history"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="kid_name"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_color" />
+
+            <TextView
+                android:id="@+id/kid_date_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="kid_date"
+                android:textSize="14sp"
+                android:textColor="@color/subtext_color"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Fila: Estado -->
+        <TextView
+            android:id="@+id/kid_history_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="kid_status"
+            android:textSize="14sp"
+            android:textColor="@color/subtext_color" />
+    </LinearLayout>
+</LinearLayout>
