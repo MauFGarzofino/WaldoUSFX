@@ -58,7 +58,7 @@ interface ApiService {
     ): Call<List<ConnectionStatusDto>>
 
     // Método para obtener todos los niños vinculados al padre
-    @GET("enrollments-Kids")
+    @GET("enrollments-Kids/{userId}")
     fun getEnrollmentsKids(
         @Path("userId") userId: String,
         @Header("Authorization") authHeader: String

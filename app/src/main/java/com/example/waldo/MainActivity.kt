@@ -98,10 +98,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setupButtons()
         requestNotificationPermissionIfNeeded()
 
+        //Cargamos los kids vinculados a ese padre
+        loadCodesParent()
+        //Inicializa todos los componentes
+        initViewComponents()
         // Llama a fetchLinkedKids para sincronizar los datos
         //fetchLinkedKids()
-        loadCodesParent()
-        initViewComponents()
     }
 
     private fun initViewComponents() {
@@ -169,11 +171,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Limpia los datos previos en memoria
         DataCodes.instance.getCodes().clear()
         kidsAdapter.updateKidsList(emptyList())
-
-        loadCodesParent()
-    }
-    private fun loadCodesParent(){
         linkedKids.clear()
+
         enrollmentRepository.getEnrolledKids { kids ->
             if (kids != null && kids.isNotEmpty()) {
                 linkedKids.addAll(kids)
@@ -201,6 +200,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 kidsAdapter.updateKidsList(displayModels)
                 fetchConnectionStatuses()
+            } else {
+                Log.d(TAG, "No hay niños vinculados para este usuario.")
+            }
+        }
+    }
+    private fun loadCodesParent(){
+        linkedKids.clear()
+        enrollmentRepository.getEnrolledKids { kids ->
+            if (kids != null && kids.isNotEmpty()) {
+                linkedKids.addAll(kids)
+                val codes = kids.map { kid ->
+                    Code(
+                        id = 0, // Si no tienes un valor específico, usa un placeholder como `0`
+                        id_User = kid.id,
+                        code = "", // Placeholder si no tienes el código
+                        isAvaible = true // O establece un valor booleano apropiado
+                    )
+                }
+                DataCodes.instance.getCodes().addAll(codes)
             } else {
                 Log.d(TAG, "No hay niños vinculados para este usuario.")
             }
