@@ -98,8 +98,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setupButtons()
         requestNotificationPermissionIfNeeded()
 
-        // Llama a fetchLinkedKids para sincronizar los datos
-        fetchLinkedKids()
+        //Cargamos los kids vinculados a ese padre
+        loadCodesParent()
+        //Inicializa todos los componentes
+        initViewComponents()
     }
 
     private fun initViewComponents() {
@@ -157,22 +159,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             )
     }
 
-    private fun fetchLinkedKids() {
-        val currentUserId = firebaseAuth.currentUser?.uid
-        if (currentUserId == null) {
-            Log.e(TAG, "Usuario no autenticado.")
-            return
-        }
-
-        // Limpia los datos previos en memoria
-        DataCodes.instance.getCodes().clear()
-        kidsAdapter.updateKidsList(emptyList())
+    private fun loadCodesParent(){
         linkedKids.clear()
-
         enrollmentRepository.getEnrolledKids { kids ->
             if (kids != null && kids.isNotEmpty()) {
                 linkedKids.addAll(kids)
-
                 val codes = kids.map { kid ->
                     Code(
                         id = 0, // Si no tienes un valor específico, usa un placeholder como `0`
@@ -182,20 +173,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     )
                 }
                 DataCodes.instance.getCodes().addAll(codes)
-
-                DataCodes.instance.getCodes().addAll(codes)
-
-                val displayModels = kids.map { kid ->
-                    KidDisplayModel(
-                        id_User = kid.id,
-                        name = "${kid.givenName} ${kid.familyName}",
-                        connectionStatus = "Cargando estado...",
-                        photo = kid.photo
-                    )
-                }
-
-                kidsAdapter.updateKidsList(displayModels)
-                fetchConnectionStatuses()
             } else {
                 Log.d(TAG, "No hay niños vinculados para este usuario.")
             }
@@ -350,7 +327,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
                             if (success) {
                                 Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
-                                fetchLinkedKids() // Actualiza la lista de niños vinculados
                             } else {
                                 Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
                             }
@@ -388,7 +364,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         enrollmentRepository.createEnrollment(CreateEnrollmentDTO(firebaseAuth.currentUser?.uid.toString(), code.id_User)) { success ->
                             if (success) {
                                 Log.d(TAG, "Vinculación creada con éxito para el niño ID: ${code.id_User}")
-                                fetchLinkedKids() // Actualiza la lista de niños vinculados
                             } else {
                                 Toast.makeText(this, "Error al crear la vinculación", Toast.LENGTH_SHORT).show()
                             }
