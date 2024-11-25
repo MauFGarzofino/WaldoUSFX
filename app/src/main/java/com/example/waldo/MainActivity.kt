@@ -8,10 +8,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.waldo.API.Observer
@@ -41,6 +44,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
@@ -69,6 +73,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var navigationView: BottomNavigationView
 
     private val markersMap = mutableMapOf<String, Marker>() // Map para asociar IDs de niños con sus marcadores
+
+    private var isMapExpanded = false // Estado del mapa expandido
 
     // Connection status
     private lateinit var connectionStatusRepository: ConnectionStatusRepository
@@ -118,6 +124,49 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             true
         }
+
+        val btnExpandMap = findViewById<FloatingActionButton>(R.id.btn_expand_map)
+
+        btnExpandMap.setOnClickListener {
+            toggleMapExpansion()
+        }
+    }
+    private fun toggleMapExpansion() {
+        val constraintLayout = findViewById<ConstraintLayout>(R.id.mainConstraintLayout)
+        val constraintSet = ConstraintSet()
+        constraintSet.clone(constraintLayout)
+
+        if (isMapExpanded) {
+            // Restaurar diseño original
+            constraintSet.connect(
+                R.id.map, ConstraintSet.BOTTOM,
+                R.id.kidsRecyclerView, ConstraintSet.TOP
+            )
+            constraintSet.connect(
+                R.id.map, ConstraintSet.TOP,
+                R.id.location_title, ConstraintSet.BOTTOM
+            )
+
+            findViewById<RecyclerView>(R.id.kidsRecyclerView).visibility = View.VISIBLE
+            findViewById<BottomNavigationView>(R.id.bottomNavBar).visibility = View.VISIBLE
+            isMapExpanded = false
+        } else {
+            // Expandir mapa a pantalla completa
+            constraintSet.connect(
+                R.id.map, ConstraintSet.BOTTOM,
+                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM
+            )
+            constraintSet.connect(
+                R.id.map, ConstraintSet.TOP,
+                ConstraintSet.PARENT_ID, ConstraintSet.TOP
+            )
+
+            findViewById<RecyclerView>(R.id.kidsRecyclerView).visibility = View.GONE
+            findViewById<BottomNavigationView>(R.id.bottomNavBar).visibility = View.GONE
+            isMapExpanded = true
+        }
+
+        constraintSet.applyTo(constraintLayout)
     }
 
     private fun initViewComponents() {
@@ -258,11 +307,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
-        //empieza el traqueo para el niño
-        fetchChildrenLocations()
         map = googleMap
-        map.uiSettings.isZoomControlsEnabled = true
+
+        // Habilitar controles de UI
+        map.uiSettings.isZoomControlsEnabled = true  // Habilitar botones de zoom
+        map.uiSettings.isCompassEnabled = true      // Mostrar la brújula
+        map.uiSettings.isMyLocationButtonEnabled = true // Habilitar botón para centrar en la ubicación del usuario
+        map.uiSettings.isScrollGesturesEnabled = true   // Permitir desplazarse
+        map.uiSettings.isZoomGesturesEnabled = true     // Permitir zoom
+        map.uiSettings.isRotateGesturesEnabled = true   // Permitir rotación
+        map.uiSettings.isTiltGesturesEnabled = true     // Permitir inclinar el mapa
+
     }
+
 
     private fun fetchChildrenLocations() {
         Log.d(TAG, "Starting fetching to kids")
