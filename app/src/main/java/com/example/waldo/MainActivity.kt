@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -85,6 +87,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_main)
 
         setupRecyclerView()
+        monitorConnectionStatus()
         clearUserData()
 
         firebaseAuth = FirebaseAuth.getInstance()
@@ -100,7 +103,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         setupButtons()
         requestNotificationPermissionIfNeeded()
-
 
         //Cargamos los kids vinculados a ese padre
         loadCodesParent()
@@ -122,15 +124,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         disposablesKids = CompositeDisposable()
         observer = Observer()
 
-        // Llama al observer con el adaptador existente
+        // Configura el observador de datos
         observer.observeData(
             apiService = REST.getRestEngine().create(ApiService::class.java),
             disposables = disposablesKids,
             activity = this,
-            kidsAdapter = kidsAdapter // Pasa el adaptador inicializado
+            kidsAdapter = kidsAdapter
         )
         navigationView = findViewById(R.id.bottomNavBar)
+
+        // Inicia el monitoreo del estado
+        monitorConnectionStatus()
     }
+
 
     private fun setupRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.kidsRecyclerView)
@@ -384,5 +390,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
+    }
+    private fun monitorConnectionStatus() {
+        val handler = Handler(Looper.getMainLooper())
+        val runnable = object : Runnable {
+            override fun run() {
+                val currentTime = System.currentTimeMillis()
+                kidsAdapter.kids.forEach { kid ->
+                    val elapsedTime = currentTime - kid.lastUpdated
+                    if (elapsedTime > 5_000 && kid.connectionStatus != "Sin acceso a internet") {
+                        kidsAdapter.updateConnectionStatus(kid.id_User, "Sin acceso a internet")
+                        Log.d("Monitor", "Niño: ${kid.name}, ID: ${kid.id_User}, Cambiando estado a 'Sin acceso a internet'")
+                    }
+                }
+                handler.postDelayed(this, 3_000)
+            }
+        }
+        handler.post(runnable)
     }
 }

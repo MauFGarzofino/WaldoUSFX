@@ -21,7 +21,7 @@ import com.squareup.picasso.Picasso
 
 class KidsAdapter(
     private var enrollmentRepository: EnrollmentRepository,
-    private var kids: MutableList<KidDisplayModel>,
+    var kids: MutableList<KidDisplayModel>,
     private val onItemClick: (KidDisplayModel) -> Unit // Listener para clics
 ) : RecyclerView.Adapter<KidsAdapter.KidViewHolder>() {
 
@@ -89,8 +89,30 @@ class KidsAdapter(
     }
 
     fun updateKidsList(newKids: List<KidDisplayModel>) {
+        Log.d("KidsAdapter", "Actualizando lista de niños. Nuevos niños: ${newKids.size}")
         kids.clear()
         kids.addAll(newKids)
+        kids.forEach { Log.d("KidsAdapter", "Niño actualizado: ${it.name}, Estado: ${it.connectionStatus}") }
         notifyDataSetChanged()
+    }
+
+    fun updateConnectionStatus(userId: String, status: String) {
+        val childIndex = kids.indexOfFirst { it.id_User == userId }
+        if (childIndex != -1) {
+            val currentKid = kids[childIndex]
+            if (currentKid.connectionStatus != status) {
+                Log.d("KidsAdapter", "Actualizando estado del niño: ${currentKid.name} (ID: ${currentKid.id_User}) a '$status'")
+                currentKid.connectionStatus = status
+
+                // Solo actualiza `lastUpdated` si está en línea
+                if (status == "Internet Disponible") {
+                    currentKid.lastUpdated = System.currentTimeMillis()
+                }
+
+                notifyItemChanged(childIndex)
+            }
+        } else {
+            Log.e("KidsAdapter", "No se encontró al niño con ID: $userId para actualizar el estado.")
+        }
     }
 }
