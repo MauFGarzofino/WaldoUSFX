@@ -33,6 +33,6 @@ class DataLocationAdapter (private var historyLocation: List<LocationData>) : Re
         val location = historyLocation[position]
         holder.latitude.text = location.latitude.toString()
         holder.longitude.text = location.longitude.toString()
-        holder.batteryLevel.text = location.batteryLevel.toString()
+        holder.batteryLevel.text = location.batteryLevel.toString() + "%"
     }
 }

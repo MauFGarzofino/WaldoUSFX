@@ -6,6 +6,7 @@ import android.provider.ContactsContract.Data
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.waldo.HistoryDataLocationActivity
 import com.example.waldo.Interfaces.ApiService
 import com.example.waldo.Models.HistoryKid
 import com.example.waldo.Models.LocationData
@@ -47,13 +48,14 @@ class LocationDataRepository(private val apiService: ApiService, private val con
         apiService.getHistoryLocations(id_Kid,"Bearer $token").enqueue(object : Callback<List<LocationData>> {
             override fun onResponse(call: Call<List<LocationData>>, response: Response<List<LocationData>>) {
                 if (response.isSuccessful) {
-                    val activity = context as Activity
+                    val activity = context as HistoryDataLocationActivity
                     val dataLocations = response.body()
                     Log.d("History Repository", "Niños obtenidos del servidor: ${dataLocations?.size}")
                     dataLocationAdapter = DataLocationAdapter(dataLocations!!)
                     recyclerView = activity.findViewById(R.id.locationsRecyclerView)
                     recyclerView.layoutManager = LinearLayoutManager(activity)
                     recyclerView.adapter = dataLocationAdapter
+                    activity.showLocationOnMap(dataLocations)
                 } else {
                     Log.e("History Repository", "Error al obtener niños vinculados: ${response.code()}")
                 }

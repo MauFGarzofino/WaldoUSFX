@@ -1,33 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#17364D"
-    android:padding="30dp"
+    android:background="#17364d"
     android:gravity="center"
     tools:context=".HistoryActivity">
+
+    <!-- Título -->
     <TextView
         android:id="@+id/kid_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:text="Historial de Localizaciones"
         android:textStyle="bold"
         android:textSize="25sp"
-
         android:textColor="@color/white" />
 
+    <!-- Mapa -->
+    <fragment
+        android:id="@+id/map_routes"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- RecyclerView para historial -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/locationsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginRight="10dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginBottom="8dp"
         tools:listitem="@layout/data_location_item" />
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary_color"
+        app:itemIconTint="@color/secondary_color"
+        app:itemRippleColor="@color/secondary_color"
+        app:itemTextColor="@color/secondary_color"
+        app:menu="@menu/bottom_nav_reports" />
 
 </LinearLayout>
