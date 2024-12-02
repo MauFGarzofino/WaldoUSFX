@@ -2,6 +2,7 @@ package com.example.waldo
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -22,6 +23,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class HistoryDataLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationDataRepository : LocationDataRepository
@@ -47,8 +49,13 @@ class HistoryDataLocationActivity : AppCompatActivity(), OnMapReadyCallback {
             recyclerView = findViewById(R.id.locationsRecyclerView)
             recyclerView.layoutManager = LinearLayoutManager(this)
             dataLocationAdapter = DataLocationAdapter(datalocations!!)
+            dataLocationAdapter.setMap(this.map)
             recyclerView.adapter = dataLocationAdapter
             showLocationOnMap(datalocations!!)
+            findViewById<FloatingActionButton>(R.id.btn_show_locations).setOnClickListener{
+                map.clear()
+                showLocationOnMap(datalocations!!)
+            }
         }
 
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_routes) as SupportMapFragment
@@ -86,7 +93,8 @@ class HistoryDataLocationActivity : AppCompatActivity(), OnMapReadyCallback {
                 map.addMarker(MarkerOptions()
                     .position(latIng)
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
-                    .title("Bateria: ${location.batteryLevel} %"))
+                    .title("Bateria: ${location.batteryLevel}%")
+                    .snippet("Fecha: ${location.created_at}"))
 
                 polylineOptions.add(latIng)
             }
