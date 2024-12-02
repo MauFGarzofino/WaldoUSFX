@@ -25,7 +25,6 @@ import com.example.waldo.Classes.IntegratorCamera
 import com.example.waldo.DTO.CreateEnrollmentDTO
 import com.example.waldo.Interfaces.ApiService
 import com.example.waldo.Models.Code
-import com.example.waldo.Models.KidDisplayModel
 import com.example.waldo.Models.LocationData
 import com.example.waldo.Models.User
 import com.example.waldo.Repository.CodeRepository
@@ -45,7 +44,6 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.navigation.NavigationView
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers

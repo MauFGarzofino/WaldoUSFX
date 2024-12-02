@@ -1,14 +1,18 @@
 package com.example.waldo
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.waldo.API.REST
 import com.example.waldo.Interfaces.ApiService
 import com.example.waldo.Models.LocationData
 import com.example.waldo.Repository.LocationDataRepository
+import com.example.waldo.ui.DataLocationAdapter
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -17,10 +21,14 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class HistoryDataLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationDataRepository : LocationDataRepository
+    private lateinit var navigationView : BottomNavigationView
     private lateinit var map: GoogleMap
+    private lateinit var dataLocationAdapter: DataLocationAdapter
+    private lateinit var recyclerView: RecyclerView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -32,10 +40,30 @@ class HistoryDataLocationActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         val intent = intent
         val idKid = intent.getStringExtra("id_Kid")
+        navigationView = findViewById(R.id.bottomNavBarReport)
         locationDataRepository = LocationDataRepository(REST.getRestEngine().create(ApiService::class.java), this)
-        locationDataRepository.getHistoryForKid(idKid.toString())
+
+        locationDataRepository.getHistoryForKid(idKid.toString()){ datalocations ->
+            recyclerView = findViewById(R.id.locationsRecyclerView)
+            recyclerView.layoutManager = LinearLayoutManager(this)
+            dataLocationAdapter = DataLocationAdapter(datalocations!!)
+            recyclerView.adapter = dataLocationAdapter
+            showLocationOnMap(datalocations!!)
+        }
+
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_routes) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        navigationView.setOnNavigationItemSelectedListener  { menuItem ->
+            when(menuItem.itemId){
+                R.id.nav_report_battery -> {
+                    val intent = Intent(this, BatteryLevelReportActivity::class.java)
+                        .putExtra("id_Kid", idKid)
+                    startActivity(intent)
+                }
+            }
+            true
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {

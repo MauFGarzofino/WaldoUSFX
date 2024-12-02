@@ -39,29 +39,27 @@ class LocationDataRepository(private val apiService: ApiService, private val con
         }.firstOrError()
     }
 
-    fun getHistoryForKid(id_Kid : String){
+    fun getHistoryForKid(id_Kid : String?, onResult : (List<LocationData>?)->Unit){
         val token = getToken()
         if (token == null) {
             Log.e("History Repository", "No se encontró el token")
+            onResult(emptyList())
             return
         }
         apiService.getHistoryLocations(id_Kid,"Bearer $token").enqueue(object : Callback<List<LocationData>> {
             override fun onResponse(call: Call<List<LocationData>>, response: Response<List<LocationData>>) {
                 if (response.isSuccessful) {
-                    val activity = context as HistoryDataLocationActivity
                     val dataLocations = response.body()
                     Log.d("History Repository", "Niños obtenidos del servidor: ${dataLocations?.size}")
-                    dataLocationAdapter = DataLocationAdapter(dataLocations!!)
-                    recyclerView = activity.findViewById(R.id.locationsRecyclerView)
-                    recyclerView.layoutManager = LinearLayoutManager(activity)
-                    recyclerView.adapter = dataLocationAdapter
-                    activity.showLocationOnMap(dataLocations)
+                    onResult(response.body())
                 } else {
                     Log.e("History Repository", "Error al obtener niños vinculados: ${response.code()}")
+                    onResult(emptyList())
                 }
             }
             override fun onFailure(call: Call<List<LocationData>>, t: Throwable) {
                 Log.e("History Repository", "Error de conexión", t)
+                onResult(emptyList())
             }
         })
     }

@@ -45,7 +45,7 @@
 
     <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavBar"
+        android:id="@+id/bottomNavBarReport"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary_color"

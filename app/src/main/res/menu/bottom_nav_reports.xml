@@ -5,9 +5,9 @@
         android:icon="@drawable/location"
         android:title="Rutas" />
     <item
-        android:id="@+id/other0"
-        android:icon="@drawable/ic_person"
-        android:title="Other" />
+        android:id="@+id/nav_report_battery"
+        android:icon="@drawable/baterry"
+        android:title="Reporte de bateria" />
     <item
         android:id="@+id/other1"
         android:icon="@drawable/ic_person"
