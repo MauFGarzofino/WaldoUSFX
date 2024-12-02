@@ -19,6 +19,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resValue("string", "google_maps_key", mapKey)
     }
@@ -72,6 +73,7 @@ dependencies {
     implementation(libs.zxing.android.embedded)
     implementation(libs.androidx.recyclerview)
     implementation(libs.picasso)
+    implementation(libs.mpandroidchart)
     annotationProcessor(libs.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

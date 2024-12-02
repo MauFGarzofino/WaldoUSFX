@@ -1,7 +1,7 @@
 package com.example.waldo.Models
 
 data class EnrollmentKid(
-    val id: Number,
+    val id: Int,
     val id_Kid: String,
     val id_Parent: String,
     val familyName: String,

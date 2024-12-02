@@ -1,14 +1,29 @@
 package com.example.waldo.Repository
 
+import android.app.Activity
 import android.content.Context
+import android.provider.ContactsContract.Data
 import android.util.Log
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.waldo.HistoryDataLocationActivity
 import com.example.waldo.Interfaces.ApiService
+import com.example.waldo.Models.HistoryKid
 import com.example.waldo.Models.LocationData
+import com.example.waldo.R
+import com.example.waldo.ui.DataLocationAdapter
+import com.example.waldo.ui.HistoryAdapter
+import com.google.firebase.auth.FirebaseAuth
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class LocationDataRepository(private val apiService: ApiService, private val context: Context) {
 
+    private lateinit var dataLocationAdapter : DataLocationAdapter
+    private lateinit var recyclerView: RecyclerView
     // Recupera el token almacenado en SharedPreferences
     private fun getToken(): String? {
         val sharedPreferences = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
@@ -22,5 +37,30 @@ class LocationDataRepository(private val apiService: ApiService, private val con
         return Observable.fromCallable {
             apiService.getLocationById(id, "Bearer $token").blockingFirst()
         }.firstOrError()
+    }
+
+    fun getHistoryForKid(id_Kid : String?, onResult : (List<LocationData>?)->Unit){
+        val token = getToken()
+        if (token == null) {
+            Log.e("History Repository", "No se encontró el token")
+            onResult(emptyList())
+            return
+        }
+        apiService.getHistoryLocations(id_Kid,"Bearer $token").enqueue(object : Callback<List<LocationData>> {
+            override fun onResponse(call: Call<List<LocationData>>, response: Response<List<LocationData>>) {
+                if (response.isSuccessful) {
+                    val dataLocations = response.body()
+                    Log.d("History Repository", "Niños obtenidos del servidor: ${dataLocations?.size}")
+                    onResult(response.body())
+                } else {
+                    Log.e("History Repository", "Error al obtener niños vinculados: ${response.code()}")
+                    onResult(emptyList())
+                }
+            }
+            override fun onFailure(call: Call<List<LocationData>>, t: Throwable) {
+                Log.e("History Repository", "Error de conexión", t)
+                onResult(emptyList())
+            }
+        })
     }
 }

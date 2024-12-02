@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:backgroundTint="#fefefe"
+    android:background="#fefefe"
+    android:gravity="center_vertical">
+
+    <ImageButton
+        android:id="@+id/DL_image"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="#17364D"
+        android:src="@drawable/location"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="image" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Latitud: "
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_color" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Longitud: "
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_color" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/Dl_latitude"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Latitud"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_color" />
+
+            <TextView
+                android:id="@+id/Dl_longitude"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Longitud"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/text_color" />
+        </LinearLayout>
+    </LinearLayout>
+    <ImageView
+        android:id="@+id/BatteryImage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/baterry"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="image" />
+    <TextView
+        android:id="@+id/Dl_battery_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="100%"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@color/text_color" />
+</LinearLayout>

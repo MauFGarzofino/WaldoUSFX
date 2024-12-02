@@ -12,7 +12,7 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-
     <color name="yellow">#FFC801</color>
-
+    <color name="primary_color">#F1C47B</color>
+    <color name="secondary_color">#17364D</color>
 </resources>
